@@ -1,7 +1,12 @@
 from calculators import CsvCalculator
 from chart import Level, SignalDispatcher
 from colorama import Fore, Style
-from config import BacktestSettings, DiscoverSettings, init_backtest_logger, log_with_color
+from config import (
+    BacktestSettings,
+    DiscoverSettings,
+    init_backtest_logger,
+    log_with_color,
+)
 from core import Tick, EngineState, run_engine_async
 from datetime import datetime, timedelta
 from tickers import CsvTicker
@@ -85,24 +90,16 @@ async def main(args):
         profit_loss = 0
         if position["direction"] == "LONG":
             if tick.price >= position["take_profit"]:
-                profit_loss = round(
-                    (position["take_profit"] - market_price) * 1000, 2
-                )
+                profit_loss = round((position["take_profit"] - market_price) * 1000, 2)
             elif tick.price <= position["stop_loss"]:
-                profit_loss = round(
-                    (position["stop_loss"] - market_price) * 1000, 2
-                )
+                profit_loss = round((position["stop_loss"] - market_price) * 1000, 2)
             else:
                 return
         else:
             if tick.price <= position["take_profit"]:
-                profit_loss = round(
-                    (market_price - position["take_profit"]) * 1000, 2
-                )
+                profit_loss = round((market_price - position["take_profit"]) * 1000, 2)
             elif tick.price >= position["stop_loss"]:
-                profit_loss = round(
-                    (market_price - position["stop_loss"]) * 1000, 2
-                )
+                profit_loss = round((market_price - position["stop_loss"]) * 1000, 2)
             else:
                 return
 
@@ -120,7 +117,7 @@ async def main(args):
             logger,
             f"Trade completed, Start = {ts_start}, End = {ts_end}, PnL = ${profit_loss:.2f}",
             Fore.GREEN if profit_loss > 0 else Fore.RED,
-            "info"
+            "info",
         )
 
         # Reset position
@@ -135,7 +132,7 @@ async def main(args):
         logger,
         f"Total PnL on Day = ${total_pnl:.2f}{Style.RESET_ALL}",
         Fore.GREEN if total_pnl > 0 else Fore.RED,
-        "info"
+        "info",
     )
 
 

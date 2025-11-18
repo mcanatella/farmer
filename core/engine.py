@@ -21,6 +21,7 @@ async def run_engine_async(
         if asyncio.iscoroutine(res):
             await res
 
+
 def run_engine(ticker: Ticker, state: Any, ontick: Callable[[Tick, Any], None]):
     for tick in ticker:
         ontick(tick, state)

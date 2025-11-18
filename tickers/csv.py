@@ -84,7 +84,7 @@ class CsvTicker:
             if self.throttle:
                 await asyncio.sleep(self.throttle)
             yield tick
-    
+
     def __iter__(self) -> Iterator[Tick]:
         for tick in self._rows():
             if self.throttle:

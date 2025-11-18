@@ -1,4 +1,4 @@
-from calculators import CsvCalculator, ProjectXCalculator # TODO: support CsvCalculator
+from calculators import CsvCalculator, ProjectXCalculator  # TODO: support CsvCalculator
 from config import Settings, DiscoverSettings
 from projectx_client import Auth, MarketData
 
@@ -29,6 +29,7 @@ def main(args):
     )
 
     calculator.calculate_and_print()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

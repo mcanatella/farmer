@@ -20,6 +20,7 @@ class Level:
     def update(self, value):
         self.value = value
 
+
 class SignalDispatcher:
     def __init__(self, logger, levels=[]):
         self.logger = logger

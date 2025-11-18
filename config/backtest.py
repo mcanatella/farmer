@@ -1,5 +1,6 @@
 from . import Settings
 
+
 class BacktestSettings(Settings):
     backtest_date: str
     data_dir: str

@@ -11,14 +11,17 @@ FNAME_PREFIX = "glbx-mdp3-"
 FNAME_POSTFIX = ".trades.csv"
 FNAME_RE = re.compile(rf"{re.escape(FNAME_PREFIX)}(\d{{8}}){re.escape(FNAME_POSTFIX)}$")
 
+
 # Helper that floors to the nearest 5-minute mark and returns a datetime object
 def _floor_5min(dt: datetime) -> datetime:
     m = dt.minute - (dt.minute % 5)
     return dt.replace(minute=m, second=0, microsecond=0)
 
+
 # Helper that parses YYYYMMDD string into a date object
 def _parse_yyyymmdd(s: str) -> date:
     return date(int(s[:4]), int(s[4:6]), int(s[6:8]))
+
 
 class CsvCalculator:
     def __init__(
@@ -38,7 +41,7 @@ class CsvCalculator:
         self.data_dir = Path(data_dir)
         self.start_date = start_date
         self.end_date = end_date
-        
+
         self.symbols = symbols
         self.start_symbol = self.symbols[0]
 
@@ -67,12 +70,14 @@ class CsvCalculator:
             print(
                 f"  Level: {lvl['price']:.2f} | Hits: {len(lvl['hits'])} | Score: {lvl['score']:.2f}"
             )
-        
+
         return top_support, top_resistance
 
     def calculate(self) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         self.poll()
-        return calculate_levels_from_candles(self.candles, self.min_separation, self.price_tolerance, self.top_n)
+        return calculate_levels_from_candles(
+            self.candles, self.min_separation, self.price_tolerance, self.top_n
+        )
 
     def poll(self):
         # OHLCV state accumulator keyed by (bucket_ts, symbol)
@@ -81,20 +86,25 @@ class CsvCalculator:
         symbol_volumes: Dict[str, int] = {self.start_symbol: 0}
         for sym in self.symbols:
             symbol_volumes[sym] = 0
-        
+
         current_symbol = self.start_symbol
 
         def handler(tick: Tick, state: Any):
             nonlocal buckets, symbol_volumes, current_symbol
 
             symbol_volumes[tick.symbol] += tick.size
-            if tick.symbol != current_symbol and symbol_volumes[tick.symbol] > symbol_volumes[current_symbol]:
-                self.logger.info(f"Switching from {current_symbol} to {tick.symbol} at {tick.t.isoformat()} with volumes: {symbol_volumes}")
+            if (
+                tick.symbol != current_symbol
+                and symbol_volumes[tick.symbol] > symbol_volumes[current_symbol]
+            ):
+                self.logger.info(
+                    f"Switching from {current_symbol} to {tick.symbol} at {tick.t.isoformat()} with volumes: {symbol_volumes}"
+                )
                 current_symbol = tick.symbol
 
             if tick.symbol != current_symbol:
                 return
-            
+
             bkt = _floor_5min(tick.t), tick.symbol
             rec = buckets.get(bkt)
             if rec is None:
@@ -132,10 +142,12 @@ class CsvCalculator:
             # Reset symbol volumes for next file
             for k in symbol_volumes:
                 symbol_volumes[k] = 0
-        
+
         # Flatten to list of dicts, sorted by time then symbol
         out: List[Dict] = []
-        for (bkt_ts, sym), rec in sorted(buckets.items(), key=lambda x: (x[0][0], x[0][1])):
+        for (bkt_ts, sym), rec in sorted(
+            buckets.items(), key=lambda x: (x[0][0], x[0][1])
+        ):
             out.append(
                 {
                     "t": bkt_ts.isoformat().replace("+00:00", "Z"),

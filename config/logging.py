@@ -22,6 +22,7 @@ def init_backtest_logger():
 
     return logger
 
+
 def init_strucutred_logger():
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -33,6 +34,7 @@ def init_strucutred_logger():
     logger.addHandler(handler)
 
     return logger
+
 
 def log_with_color(logger: Any, message: str, color: str, level: str) -> None:
     if level == "debug":

@@ -1,6 +1,7 @@
 from . import Settings
 from typing import List
 
+
 class BotSettings(Settings):
     auto: bool
     exclude_level: List[float]

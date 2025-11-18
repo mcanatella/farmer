@@ -3,7 +3,10 @@ from typing import Any
 
 import pandas as pd
 
-def calculate_levels_from_candles(candles, min_separation, price_tolerance, top_n) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+
+def calculate_levels_from_candles(
+    candles, min_separation, price_tolerance, top_n
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """
     Identify support and resistance levels from historical candle data.
     A level is considered valid if it is an isolated high/low compared to surrounding candles.
@@ -42,14 +45,11 @@ def calculate_levels_from_candles(candles, min_separation, price_tolerance, top_
             resistance_candidates.append((high, volume))
 
     # Return top support and resistance levels
-    top_support = _cluster_levels(
-        support_candidates, price_tolerance
-    )[: top_n]
-    top_resistance = _cluster_levels(
-        resistance_candidates, price_tolerance
-    )[: top_n]
+    top_support = _cluster_levels(support_candidates, price_tolerance)[:top_n]
+    top_resistance = _cluster_levels(resistance_candidates, price_tolerance)[:top_n]
 
     return top_support, top_resistance
+
 
 def _cluster_levels(candidates, tolerance):
     """

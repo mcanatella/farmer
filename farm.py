@@ -39,7 +39,7 @@ def main(args):
 
         support_dict, resistance_dict = calculator.calculate_and_print()
 
-        for lvl in (support_dict + resistance_dict):
+        for lvl in support_dict + resistance_dict:
             price = round(lvl["price"], 2)
             if args.exclude_level is None or price not in args.exclude_level:
                 levels.append(

@@ -1,5 +1,6 @@
 from . import Settings
 
+
 class DiscoverSettings(Settings):
     days: int
     candle_length: int

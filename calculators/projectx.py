@@ -4,6 +4,7 @@ from typing import Any
 
 import math
 
+
 class ProjectXCalculator:
     def __init__(
         self,
@@ -44,13 +45,15 @@ class ProjectXCalculator:
             print(
                 f"  Level: {lvl['price']:.2f} | Hits: {len(lvl['hits'])} | Score: {lvl['score']:.2f}"
             )
-        
+
         return top_support, top_resistance
 
     # Analyze the candle data to find support and resistance levels
     def calculate(self) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         self.poll()
-        return calculate_levels_from_candles(self.candles, self.min_separation, self.price_tolerance, self.top_n)
+        return calculate_levels_from_candles(
+            self.candles, self.min_separation, self.price_tolerance, self.top_n
+        )
 
     def poll(self):
         num_candles = math.ceil(60 / self.candle_length) * 24 * self.days
