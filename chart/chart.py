@@ -12,20 +12,18 @@ class Chart:
     def __init__(
         self,
         logger,
-        api_base,
         market_hub_base,
-        user,
-        api_key,
+        jwt_token,
+        market_data_client,
+        orders_client,
         account_id,
         contract_id,
         contract_size,
         levels=[],
     ):
         self.logger = logger
-        self.api_base = api_base
         self.market_hub_base = market_hub_base
-        self.user = user
-        self.api_key = api_key
+        self.jwt_token = jwt_token
         self.account_id = account_id
         self.contract_id = contract_id
         self.contract_size = contract_size
@@ -33,10 +31,6 @@ class Chart:
 
         self.position = None
         self.lock = threading.Lock()
-
-        auth = Auth(base_url=self.api_base, username=self.user, api_key=self.api_key)
-
-        self.jwt_token = auth.login()
 
         self.market_hub = (
             HubConnectionBuilder()
@@ -66,8 +60,8 @@ class Chart:
         self.market_hub.on("GatewayQuote", self.on_quote)
 
         # Initialize ProjectX API clients
-        self.market_data_client = MarketData(self.api_base, self.jwt_token)
-        self.orders_client = Orders(self.api_base, self.jwt_token)
+        self.market_data_client = market_data_client
+        self.orders_client = orders_client
 
         # Initialize asynchronous historical data poller
         self.candle_poller = CandlePoller(

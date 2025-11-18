@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from .protocols import Ticker
+from .protocols import AsyncTicker, Ticker
 from .types import Tick
 from typing import Any, Awaitable, Callable, Dict
 
@@ -13,10 +13,14 @@ class EngineState:
     profit_loss: int = 0
 
 
-async def run_engine(
-    ticker: Ticker, state: Any, on_tick: Callable[[Tick], Awaitable[None] | None]
+async def run_engine_async(
+    ticker: AsyncTicker, state: Any, on_tick: Callable[[Tick], Awaitable[None] | None]
 ):
     async for tick in ticker:
         res = on_tick(tick, state)
         if asyncio.iscoroutine(res):
             await res
+
+def run_engine(ticker: Ticker, state: Any, ontick: Callable[[Tick, Any], None]):
+    for tick in ticker:
+        ontick(tick, state)

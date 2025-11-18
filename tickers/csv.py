@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import time
 
 from core import Tick
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import AsyncIterator, Optional, Iterable
+from typing import AsyncIterator, Optional, Iterator, Iterable
 
 
 # Helper that prunes down to the mircosecond and returns a datetime object
@@ -28,24 +29,16 @@ class CsvTicker:
     def __init__(
         self,
         csv_path: str | Path,
-        current_symbol: str,
-        next_symbol: str,
+        want_symbols: list[str],
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
         throttle: float = 0.0,
     ):
         self.csv_path = Path(csv_path)
-        self.current_symbol = current_symbol
-        self.next_symbol = next_symbol
+        self.want_symbols = want_symbols
         self.start_time = start_time
         self.end_time = end_time
         self.throttle = throttle
-
-        self.symbol_volumes = {self.current_symbol: 0}
-
-        # Note if current and next sybmols are the same, then it indicates that there is no need for rollover
-        if self.next_symbol != self.current_symbol:
-            self.symbol_volumes[self.next_symbol] = 0
 
     def _rows(self) -> Iterable[Tick]:
         with self.csv_path.open("r", newline="") as f:
@@ -66,20 +59,8 @@ class CsvTicker:
                         continue
 
                     # Ignore irrelevant symbols
-                    if row[symbol_i] not in [self.current_symbol, self.next_symbol]:
+                    if row[symbol_i] not in self.want_symbols:
                         continue
-
-                    # Update rollover detection
-                    self.symbol_volumes[row[symbol_i]] += int(row[size_i])
-
-                    # Rollover to the next symbol if necessary
-                    if (
-                        self.current_symbol != self.next_symbol
-                        and self.symbol_volumes[self.next_symbol]
-                        > self.symbol_volumes[self.current_symbol]
-                    ):
-                        # TODO: Log informational message that rollover occurred
-                        self.current_symbol = self.next_symbol
 
                     t = _parse_ts_event(row[ts_event_i])
                     if self.start_time and t < self.start_time:
@@ -102,4 +83,10 @@ class CsvTicker:
         for tick in self._rows():
             if self.throttle:
                 await asyncio.sleep(self.throttle)
+            yield tick
+    
+    def __iter__(self) -> Iterator[Tick]:
+        for tick in self._rows():
+            if self.throttle:
+                time.sleep(self.throttle)
             yield tick
