@@ -89,7 +89,7 @@ class CsvCalculator:
 
         current_symbol = self.start_symbol
 
-        def handler(tick: Tick, state: Any):
+        def handler(tick: Tick):
             nonlocal buckets, symbol_volumes, current_symbol
 
             symbol_volumes[tick.symbol] += tick.size
@@ -137,7 +137,7 @@ class CsvCalculator:
         for fp in files:
             ticker = CsvTicker(fp, self.symbols)
 
-            run_engine(ticker, buckets, handler)
+            run_engine(ticker, handler)
 
             # Reset symbol volumes for next file
             for k in symbol_volumes:

@@ -7,7 +7,7 @@ from config import (
     init_backtest_logger,
     log_with_color,
 )
-from core import Tick, EngineState, run_engine_async
+from core import Tick, run_engine_async
 from datetime import datetime, timedelta
 from tickers import CsvTicker
 from typing import Any, Dict
@@ -78,7 +78,7 @@ async def main(args):
     position: Dict[str, Any] = None
 
     # The handler will determine when to enter and exit trades similar to the signal dispatcher used in farm.py
-    def handler(tick: Tick, state: Any):
+    def handler(tick: Tick):
         nonlocal logger, total_pnl, position, mock_dispatcher
 
         if position is None:
@@ -123,10 +123,9 @@ async def main(args):
         # Reset position
         position = None
 
-    state = EngineState()
     filename = f"{args.data_dir}/glbx-mdp3-{args.backtest_date}.trades.csv"
     ticker = CsvTicker(filename, ["CLU5", "CLX5", "CLZ5"])
-    await run_engine_async(ticker, state, handler)
+    await run_engine_async(ticker, handler)
 
     log_with_color(
         logger,

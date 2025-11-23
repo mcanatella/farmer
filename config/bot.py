@@ -9,7 +9,7 @@ class BotSettings(Settings):
     # TODO: support load_yaml
 
     @classmethod
-    def set_bot_args(cls, parser):
+    def set_args(cls, parser):
         parser.add_argument(
             "--auto",
             action="store_true",

@@ -1,17 +1,17 @@
 from calculators import CsvCalculator, ProjectXCalculator
 from chart import Chart, Level
+from config import Settings, BotSettings, DiscoverSettings, init_strucutred_logger
 from projectx_client import Auth, MarketData, Orders
 
 import argparse
-import config
 
 
 def main(args):
     # Initialize the root logger
-    logger = config.init_strucutred_logger()
+    logger = init_strucutred_logger()
 
     # Load settings from yaml config
-    settings = config.Settings.load_yaml(args.config)
+    settings = Settings.load_yaml(args.config)
 
     auth = Auth(
         base_url=settings.api_base, username=settings.user, api_key=settings.api_key
@@ -85,9 +85,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Simple, tunable, algorithmic trading bot"
     )
-    config.Settings.set_common_args(parser)
-    config.Settings.set_bot_args(parser)
-    config.Settings.set_discover_args(parser)
+    Settings.set_args(parser)
+    BotSettings.set_args(parser)
+    DiscoverSettings.set_args(parser)
     args = parser.parse_args()
 
     main(args)
