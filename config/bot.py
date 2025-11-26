@@ -3,11 +3,6 @@ from typing import List
 
 
 class BotSettings(Settings):
-    auto: bool
-    exclude_level: List[float]
-
-    # TODO: support load_yaml
-
     @classmethod
     def set_args(cls, parser):
         parser.add_argument(

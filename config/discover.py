@@ -2,17 +2,14 @@ from . import Settings
 
 
 class DiscoverSettings(Settings):
-    days: int
-    candle_length: int
-    unit: str
-    price_tolerance: float
-    min_separation: int
-    top_n: int
-
-    # TODO: support load_yaml
-
     @classmethod
     def set_args(cls, parser):
+        parser.add_argument(
+            "--contract-id",
+            required=True,
+            type=str,
+            help="The the contract id to analyze",
+        )
         parser.add_argument(
             "--days",
             type=int,

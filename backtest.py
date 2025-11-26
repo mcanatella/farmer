@@ -17,7 +17,7 @@ import argparse
 import asyncio
 
 
-async def main(args):
+async def main(args) -> None:
     logger = init_backtest_logger()
 
     # Parse string version of the back test date into a date object
@@ -32,7 +32,7 @@ async def main(args):
         "cl_historical",
         start_date,
         end_date,
-        ["CLU5", "CLX5", "CLZ5"],  # TODO: Make this configurable
+        ["CLU5", "CLX5", "CLZ5", "CLF6"],  # TODO: Make this configurable
         candle_length=args.candle_length,
         unit=args.unit,
         price_tolerance=args.price_tolerance,
@@ -43,8 +43,8 @@ async def main(args):
     # Once the mock poller has candles populated, it can calculate support and resistance levels
     support_dict, resistance_dict = calculator.calculate_and_print()
 
-    reward_points = 0.20
-    risk_points = 0.10
+    reward_points = 0.20  # TODO: Make configurable
+    risk_points = 0.10  # TODO: Make configurable
 
     support = [
         Level(
@@ -75,7 +75,7 @@ async def main(args):
     mock_dispatcher = SignalDispatcher(logger, levels=(support + resistance))
 
     total_pnl: float = 0.00
-    position: Dict[str, Any] = None
+    position: Dict[str, Any] | None = None
 
     # The handler will determine when to enter and exit trades similar to the signal dispatcher used in farm.py
     def handler(tick: Tick):
@@ -124,7 +124,7 @@ async def main(args):
         position = None
 
     filename = f"{args.data_dir}/glbx-mdp3-{args.backtest_date}.trades.csv"
-    ticker = CsvTicker(filename, ["CLU5", "CLX5", "CLZ5"])
+    ticker = CsvTicker(filename, ["CLU5", "CLX5", "CLZ5", "CLF6"])
     await run_engine_async(ticker, handler)
 
     log_with_color(

@@ -15,6 +15,6 @@ async def run_engine_async(
             await res
 
 
-def run_engine(ticker: Ticker, ontick: Callable[[Tick, Any], None]):
+def run_engine(ticker: Ticker, ontick: Callable[[Tick], None]):
     for tick in ticker:
         ontick(tick)

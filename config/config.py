@@ -1,18 +1,17 @@
 from pydantic import BaseModel
-from typing import List, Dict, Any
 
 import yaml
 
 
-class Settings(BaseModel):
-    api_base: str
+class ApiSettings(BaseModel):
+    base: str
     market_hub_base: str
     user: str
-    api_key: str
-    account_id: int
-    contract_id: str
-    contract_size: int
-    levels: List[Dict[str, Any]]
+    key: str
+
+
+class Settings(BaseModel):
+    api: ApiSettings
 
     @classmethod
     def load_yaml(cls, path: str = "config.yaml") -> "Settings":

@@ -51,10 +51,7 @@ class CsvCalculator:
         self.min_separation = min_separation
         self.top_n = top_n
 
-        self.candles = None
-
-        self.support_candidates = []
-        self.resistance_candidates = []
+        self.candles: List[Dict[str, Any]] = []
 
     def calculate_and_print(self) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         top_support, top_resistance = self.calculate()
@@ -79,7 +76,7 @@ class CsvCalculator:
             self.candles, self.min_separation, self.price_tolerance, self.top_n
         )
 
-    def poll(self):
+    def poll(self) -> None:
         # OHLCV state accumulator keyed by (bucket_ts, symbol)
         buckets: Dict[tuple[datetime, str], Dict[str, float]] = {}
 
@@ -97,6 +94,7 @@ class CsvCalculator:
                 tick.symbol != current_symbol
                 and symbol_volumes[tick.symbol] > symbol_volumes[current_symbol]
             ):
+                # Rollover to the next contract symbol when its volume exceeds the current one
                 self.logger.info(
                     f"Switching from {current_symbol} to {tick.symbol} at {tick.t.isoformat()} with volumes: {symbol_volumes}"
                 )
@@ -144,7 +142,7 @@ class CsvCalculator:
                 symbol_volumes[k] = 0
 
         # Flatten to list of dicts, sorted by time then symbol
-        out: List[Dict] = []
+        out: List[Dict[str, Any]] = []
         for (bkt_ts, sym), rec in sorted(
             buckets.items(), key=lambda x: (x[0][0], x[0][1])
         ):

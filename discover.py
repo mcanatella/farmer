@@ -10,16 +10,16 @@ def main(args):
     settings = Settings.load_yaml(args.config)
 
     auth = Auth(
-        base_url=settings.api_base, username=settings.user, api_key=settings.api_key
+        base_url=settings.api.base, username=settings.api.user, api_key=settings.api.key
     )
 
     jwt_token = auth.login()
-    market_data_client = MarketData(settings.api_base, jwt_token)
+    market_data_client = MarketData(settings.api.base, jwt_token)
 
     # TODO: support multiple calculator types
     calculator = ProjectXCalculator(
         market_data_client,
-        settings.contract_id,
+        args.contract_id,
         days=args.days,
         candle_length=args.candle_length,
         unit="minutes",
