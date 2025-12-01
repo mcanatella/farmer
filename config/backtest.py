@@ -1,7 +1,7 @@
-from . import Settings
+from pydantic import BaseModel
 
 
-class BacktestSettings(Settings):
+class BacktestSettings(BaseModel):
     backtest_date: str
     data_dir: str
 

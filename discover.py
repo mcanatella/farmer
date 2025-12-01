@@ -1,13 +1,12 @@
 from calculators import CsvCalculator, ProjectXCalculator  # TODO: support CsvCalculator
-from config import Settings, DiscoverSettings
+from config import DiscoverSettings
 from projectx_client import Auth, MarketData
 
 import argparse
 
 
 def main(args):
-    # Load settings from yaml config
-    settings = Settings.load_yaml(args.config)
+    settings = DiscoverSettings.build(args)
 
     auth = Auth(
         base_url=settings.api.base, username=settings.api.user, api_key=settings.api.key
@@ -19,13 +18,13 @@ def main(args):
     # TODO: support multiple calculator types
     calculator = ProjectXCalculator(
         market_data_client,
-        args.contract_id,
-        days=args.days,
-        candle_length=args.candle_length,
-        unit="minutes",
-        price_tolerance=args.price_tolerance,
-        min_separation=args.min_separation,
-        top_n=args.top_n,
+        settings.api.contract_id,
+        days=settings.days,
+        candle_length=settings.candle_length,
+        unit=settings.unit,
+        price_tolerance=settings.price_tolerance,
+        min_separation=settings.min_separation,
+        top_n=settings.top_n,
     )
 
     calculator.calculate_and_print()
@@ -35,7 +34,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Tunable support and resistance level finder"
     )
-    Settings.set_args(parser)
     DiscoverSettings.set_args(parser)
     args = parser.parse_args()
 

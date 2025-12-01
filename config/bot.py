@@ -1,8 +1,7 @@
-from . import Settings
-from typing import List
+from pydantic import BaseModel
 
 
-class BotSettings(Settings):
+class BotSettings(BaseModel):
     @classmethod
     def set_args(cls, parser):
         parser.add_argument(
