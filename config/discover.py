@@ -45,10 +45,10 @@ class DiscoverSettings(BaseModel):
 
         if args.min_separation is not None:
             overrides["min_separation"] = args.min_separation
-            
+
         if args.top_n is not None:
             overrides["top_n"] = args.top_n
-        
+
         if overrides:
             data.update(overrides)
 
