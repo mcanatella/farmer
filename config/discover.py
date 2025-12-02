@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Dict
+from typing import Dict, Optional, List
 
 import yaml
 
@@ -13,7 +13,14 @@ class DiscoverApiSettings(BaseModel):
 
 
 class DiscoverSettings(BaseModel):
+    data_source: str = (
+        "projectx"  # Should specify either a supported api like "projectx" or "csv" for CsvCalculator
+    )
+    data_directory: Optional[str] = None  # Used only if data_source is "csv"
+    symbols: Optional[List[str]] = None  # Used only if data_source is "csv"
+
     api: DiscoverApiSettings
+
     days: int = 10
     candle_length: int = 5
     unit: str = "minutes"
@@ -31,6 +38,16 @@ class DiscoverSettings(BaseModel):
         data = raw.get("discover", {})
 
         overrides: Dict = {}
+
+        if args.data_source is not None:
+            overrides["data_source"] = args.data_source
+
+        if args.data_directory is not None:
+            overrides["data_directory"] = args.data_directory
+
+        if args.symbols is not None:
+            overrides["symbols"] = args.symbols
+
         if args.days is not None:
             overrides["days"] = args.days
 
@@ -53,6 +70,7 @@ class DiscoverSettings(BaseModel):
             data.update(overrides)
 
         api_overrides: Dict = {}
+
         if args.api_base is not None:
             api_overrides["base"] = args.api_base
 
@@ -70,11 +88,49 @@ class DiscoverSettings(BaseModel):
 
         return cls(**data)
 
+    def validate(self):
+        # Add custom validation logic here
+        if self.data_source == "csv":
+            if not self.data_directory:
+                raise ValueError(
+                    "data_directory must be specified when data_source is 'csv'"
+                )
+            if not self.symbols:
+                raise ValueError("symbols must be specified when data_source is 'csv'")
+
+        if self.data_source != "csv":
+            if self.data_directory:
+                raise ValueError(
+                    "data_directory should only be specified when data_source is 'csv'"
+                )
+            if self.symbols:
+                raise ValueError(
+                    "symbols should only be specified when data_source is 'csv'"
+                )
+
     @classmethod
     def set_args(cls, parser):
         # Config file settings
         parser.add_argument(
             "--config", type=str, default="config.yaml", help="Config file path"
+        )
+
+        # Data source settings
+        parser.add_argument(
+            "--data-source",
+            type=str,
+            help="The data source to use; either 'projectx' or 'csv'",
+        )
+        parser.add_argument(
+            "--data-directory",
+            type=str,
+            help="The directory containing CSV files; used only if data source is 'csv'",
+        )
+        parser.add_argument(
+            "--symbols",
+            nargs="+",
+            type=str,
+            help="List of symbols to analyze; used only if data source is 'csv'",
         )
 
         # Api settings

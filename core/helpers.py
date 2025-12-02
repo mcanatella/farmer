@@ -22,6 +22,7 @@ def calculate_levels_from_candles(
     resistance_candidates = []
     for i in range(min_separation, len(df) - min_separation):
         row = df.iloc[i]
+        ts = df.index[i]
         low = row["l"]
         high = row["h"]
         volume = row["v"]
@@ -33,7 +34,7 @@ def calculate_levels_from_candles(
         )
 
         if is_isolated_low:
-            support_candidates.append((low, volume))
+            support_candidates.append((low, volume, ts))
 
         # Check for isolated high; this high must be higher than highs of surrounding candles
         is_isolated_high = all(
@@ -42,7 +43,7 @@ def calculate_levels_from_candles(
         )
 
         if is_isolated_high:
-            resistance_candidates.append((high, volume))
+            resistance_candidates.append((high, volume, ts))
 
     # Return top support and resistance levels
     top_support = _cluster_levels(support_candidates, price_tolerance)[:top_n]
@@ -51,42 +52,59 @@ def calculate_levels_from_candles(
     return top_support, top_resistance
 
 
-def _cluster_levels(candidates, tolerance):
+def _cluster_levels(candidates, tolerance, decay_half_life_days: float = 15.0):
     """
-    Helper method to group price levels within `tolerance` and score them based on
-    - number of hits (confirmations)
-    - average volume during those hits
+    Group price levels within `tolerance` and score by:
+    - hit count
+    - average volume at hits
+    - recency (exponential decay on age)
     """
+    if not candidates:
+        return []
+
+    # For recency weighting
+    now = max(ts for _, _, ts in candidates)
+    half_life = pd.Timedelta(days=decay_half_life_days)
+    lam = np.log(2) / half_life.total_seconds()
+
     clusters = []
 
-    for price, volume in sorted(candidates):
+    # sort by price
+    for price, volume, ts in sorted(candidates, key=lambda x: x[0]):
         found_cluster = False
 
-        # Try to match this level to an existing cluster
         for cluster in clusters:
             if abs(price - cluster["price"]) <= tolerance:
                 cluster["hits"].append(price)
                 cluster["volumes"].append(volume)
+                cluster["timestamps"].append(ts)
                 found_cluster = True
                 break
 
-        # If no matching cluster, start a new one
         if not found_cluster:
             clusters.append(
                 {
                     "price": price,
                     "hits": [price],
                     "volumes": [volume],
+                    "timestamps": [ts],
                 }
             )
 
-    # Calculate a score for each cluster
     for cluster in clusters:
         hit_count = len(cluster["hits"])
-        avg_volume = np.mean(cluster["volumes"])
-        cluster["score"] = hit_count * avg_volume
-        # Average the cluster's price level
-        cluster["price"] = np.mean(cluster["hits"])
+        avg_volume = float(np.mean(cluster["volumes"]))
 
-    # Sort clusters by score, highest first
+        # recency weights for this cluster
+        ages = np.array([(now - ts).total_seconds() for ts in cluster["timestamps"]])
+        recency_weights = np.exp(-lam * ages)
+
+        # effective recency factor = average weight in [0, 1]
+        recency_factor = float(np.mean(recency_weights))
+
+        # You can tune this; squaring hit_count gives more love to multi-hit levels
+        cluster["score"] = (hit_count**2) * avg_volume * recency_factor
+
+        cluster["price"] = float(np.mean(cluster["hits"]))
+
     return sorted(clusters, key=lambda x: x["score"], reverse=True)
