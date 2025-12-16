@@ -1,3 +1,5 @@
+# mypy: ignore-errors
+
 from calculators import CsvCalculator, ProjectXCalculator
 from chart import Chart, Level
 from config import BotSettings, DiscoverSettings, init_strucutred_logger

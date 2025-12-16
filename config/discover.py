@@ -14,7 +14,7 @@ class DiscoverApiSettings(BaseModel):
 
 class DiscoverSettings(BaseModel):
     data_source: str = (
-        "projectx"  # Should specify either a supported api like "projectx" or "csv" for CsvCalculator
+        "projectx"  # Should specify either a supported api like "projectx" or "csv" for CsvAggregator
     )
     data_directory: Optional[str] = None  # Used only if data_source is "csv"
     symbols: Optional[List[str]] = None  # Used only if data_source is "csv"
@@ -88,7 +88,7 @@ class DiscoverSettings(BaseModel):
 
         return cls(**data)
 
-    def validate(self) -> None:
+    def custom_validate(self) -> None:
         # Add custom validation logic here
         if self.data_source == "csv":
             if not self.data_directory:

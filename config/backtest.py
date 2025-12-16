@@ -59,7 +59,7 @@ class BacktestSettings(BaseModel):
 
         return cls(**data)
 
-    def validate(self) -> None:
+    def custom_validate(self) -> None:
         pass
 
     @classmethod

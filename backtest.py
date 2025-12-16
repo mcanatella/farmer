@@ -43,13 +43,13 @@ async def main(args) -> None:
     strategy = StaticBounce(
         logger,
         candles,
-        proximity_threshold=0.03,
-        reward_points=0.20,
-        risk_points=0.10,
-        price_tolerance=settings.price_tolerance,
-        min_separation=settings.min_separation,
-        top_n=settings.top_n,
-        decay_half_life_days=15.0,
+        0.03,  # proximity_threshold
+        0.20,  # reward_points
+        0.10,  # risk_points
+        settings.price_tolerance,
+        settings.min_separation,
+        settings.top_n,
+        15.0,  # decay_half_life_days
     )
 
     strategy.print_static_levels()

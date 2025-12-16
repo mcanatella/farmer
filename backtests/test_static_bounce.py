@@ -94,8 +94,8 @@ async def run_static_bounce_backtest_async(
     price_tolerance: float,
     min_separation: int,
     top_n: int,
-    decay_half_life_days: float = 15.0,
-    lookback_days: int = 10,
+    decay_half_life_days: float,
+    lookback_days: int,
 ) -> float:
     """
     Run a static bounce backtest for the given date and return the total PnL.
@@ -121,13 +121,13 @@ async def run_static_bounce_backtest_async(
     strategy = StaticBounce(
         logger,
         candles,
-        proximity_threshold=proximity_threshold,
-        reward_points=reward_points,
-        risk_points=risk_points,
-        price_tolerance=price_tolerance,
-        min_separation=min_separation,
-        top_n=top_n,
-        decay_half_life_days=decay_half_life_days,
+        proximity_threshold,
+        reward_points,
+        risk_points,
+        price_tolerance,
+        min_separation,
+        top_n,
+        decay_half_life_days,
     )
 
     strategy.print_static_levels()
@@ -169,7 +169,7 @@ def run_static_bounce_backtest(
 
 @pytest.mark.parametrize(
     "proximity_threshold,reward_points,risk_points,price_tolerance,"
-    "min_separation,top_n",
+    "min_separation,top_n,decay_half_life_days,lookback_days",
     [
         pytest.param(
             0.03,  # proximity_threshold
@@ -177,7 +177,9 @@ def run_static_bounce_backtest(
             0.10,  # risk_points
             0.05,  # price_tolerance
             10,  # min_separation
-            5,  # top_n
+            10,  # top_n
+            15.0,  # decay_half_life_days
+            10,  # lookback_days
             id="baseline",
         ),
     ],
@@ -189,6 +191,8 @@ def test_static_bounce_baseline_params(
     price_tolerance: float,
     min_separation: int,
     top_n: int,
+    decay_half_life_days: float,
+    lookback_days: int,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     data_dir = repo_root / "cl_historical"
@@ -205,6 +209,8 @@ def test_static_bounce_baseline_params(
         price_tolerance=price_tolerance,
         min_separation=min_separation,
         top_n=top_n,
+        decay_half_life_days=decay_half_life_days,
+        lookback_days=lookback_days,
     )
 
     # Basic sanity assertions

@@ -12,7 +12,7 @@ def main(args) -> None:
     logger = init_backtest_logger()
 
     settings = DiscoverSettings.build(args)
-    settings.validate()
+    settings.custom_validate()
 
     aggregator: Aggregator
     if settings.data_source == "projectx":
@@ -28,13 +28,19 @@ def main(args) -> None:
             logger,
             market_data_client,
             settings.api.contract_id,
-            days=settings.days,
-            candle_length=settings.candle_length,
+            settings.days,
+            settings.candle_length,
             unit=settings.unit,
         )
     elif settings.data_source == "csv":
         today = datetime.now().date()
         start_date = today - timedelta(days=args.days)
+
+        if settings.data_directory is None:
+            raise ValueError("--data_directory is required when --data-source=csv")
+
+        if settings.symbols is None:
+            raise ValueError("--symbols is required when --data-source=csv")
 
         aggregator = CsvAggregator(
             logger,
@@ -51,12 +57,13 @@ def main(args) -> None:
     strategy = StaticBounce(
         logger,
         aggregator.get_candles(),
-        proximity_threshold=0.00,  # Unused when simply discovering signal data
-        reward_points=0.00,  # Unused when simply discovering signal data
-        risk_points=0.00,  # Unused when simply discovering signal data
-        price_tolerance=settings.price_tolerance,
-        min_separation=settings.min_separation,
-        top_n=settings.top_n,
+        0.00,  # proximity_threshold unused when simply discovering signal data
+        0.00,  # reward_points unused when simply discovering signal data
+        0.00,  # risk_points unused when simply discovering signal data
+        settings.price_tolerance,
+        settings.min_separation,
+        settings.top_n,
+        15.0,  # decay_half_life_days
     )
 
     strategy.print_static_levels()

@@ -12,8 +12,8 @@ class ProjectXAggregator:
         logger: logging.Logger,
         market_data_client: MarketData,
         contract_id: str,
-        days: Optional[int] = 10,
-        candle_length: Optional[int] = 5,  # TODO: Actually use this
+        days: int,
+        candle_length: int,  # TODO: Actually use this
         unit: Optional[str] = "minutes",  # TODO: Actually use this
     ) -> None:
         self.logger = logger

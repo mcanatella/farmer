@@ -10,7 +10,7 @@ class StaticLevel:
     def __init__(
         self,
         value: float,
-        hits: int,
+        hits: List[float],
         score: float,
         support: Optional[bool] = True,
         resistance: Optional[bool] = True,
@@ -31,12 +31,12 @@ class StaticBounce:
         logger: logging.Logger,
         candles: List[Dict[str, Any]],
         proximity_threshold: float,
-        reward_points: int,
-        risk_points: int,
-        price_tolerance: Optional[float] = 5.0,
-        min_separation: Optional[int] = 10,
-        top_n: Optional[int] = 5,
-        decay_half_life_days: float = 15.0,
+        reward_points: float,
+        risk_points: float,
+        price_tolerance: float,
+        min_separation: int,
+        top_n: int,
+        decay_half_life_days: float,
     ) -> None:
         # Logs trade signals
         self.logger = logger
@@ -70,7 +70,7 @@ class StaticBounce:
             self.levels[lvl.value] = lvl
 
         # Last level traded to avoid retests
-        self.last_level_traded = None
+        self.last_level_traded: float | None = None
 
     def check(self, price, timestamp=None) -> Dict[str, Any] | None:
         if not self.levels:
@@ -241,7 +241,7 @@ class StaticBounce:
         half_life = pd.Timedelta(days=self.decay_half_life_days)
         lam = np.log(2) / half_life.total_seconds()
 
-        clusters = []
+        clusters: List[Dict[str, Any]] = []
 
         # Sort by price
         for price, volume, ts in sorted(candidates, key=lambda x: x[0]):
