@@ -12,61 +12,77 @@ def main(args) -> None:
     logger = init_backtest_logger()
 
     settings = DiscoverSettings.build(args)
-    settings.custom_validate()
+
+    # Look up the specified strategy in settings and raise an error if not present
+    strategy_conf = None
+    for s in settings.strategies:
+        if s.name == args.strategy:
+            strategy_conf = s
+            break
+    if strategy_conf is None:
+        raise ValueError(f"Strategy '{args.strategy}' not found in configuration")
 
     aggregator: Aggregator
-    if settings.data_source == "projectx":
+    if strategy_conf.aggregation_params.data_source.kind == "projectx":
         auth = Auth(
-            base_url=settings.api.base,
-            username=settings.api.user,
-            api_key=settings.api.key,
+            base_url=strategy_conf.aggregation_params.data_source.base_url,
+            username=strategy_conf.aggregation_params.data_source.username,
+            api_key=strategy_conf.aggregation_params.data_source.api_key,
         )
         jwt_token = auth.login()
-        market_data_client = MarketData(settings.api.base, jwt_token)
+        market_data_client = MarketData(
+            strategy_conf.aggregation_params.data_source.base_url, jwt_token
+        )
 
         aggregator = ProjectXAggregator(
             logger,
             market_data_client,
-            settings.api.contract_id,
-            settings.days,
-            settings.candle_length,
-            unit=settings.unit,
+            strategy_conf.aggregation_params.data_source.contract_id,
+            strategy_conf.aggregation_params.lookback_days,
+            strategy_conf.aggregation_params.candle_length,
+            unit=strategy_conf.aggregation_params.unit,
         )
-    elif settings.data_source == "csv":
+    elif strategy_conf.aggregation_params.data_source.kind == "csv":
         today = datetime.now().date()
-        start_date = today - timedelta(days=args.days)
-
-        if settings.data_directory is None:
-            raise ValueError("--data_directory is required when --data-source=csv")
-
-        if settings.symbols is None:
-            raise ValueError("--symbols is required when --data-source=csv")
+        start_date = today - timedelta(
+            days=strategy_conf.aggregation_params.lookback_days
+        )
 
         aggregator = CsvAggregator(
             logger,
-            settings.data_directory,
+            strategy_conf.aggregation_params.data_source.data_dir,
             start_date,
             today,
-            settings.symbols,
-            candle_length=settings.candle_length,
-            unit=settings.unit,
+            strategy_conf.aggregation_params.data_source.symbols,
+            candle_length=strategy_conf.aggregation_params.candle_length,
+            unit=strategy_conf.aggregation_params.unit,
         )
     else:
-        raise ValueError(f"Unsupported data_source: {settings.data_source}")
+        raise ValueError(
+            f"Unsupported data_source: {strategy_conf.aggregation_params.data_source.kind}"
+        )
 
-    strategy = StaticBounce(
-        logger,
-        aggregator.get_candles(),
-        0.00,  # proximity_threshold unused when simply discovering signal data
-        0.00,  # reward_points unused when simply discovering signal data
-        0.00,  # risk_points unused when simply discovering signal data
-        settings.price_tolerance,
-        settings.min_separation,
-        settings.top_n,
-        15.0,  # decay_half_life_days
-    )
-
-    strategy.print_static_levels()
+    strategy = None
+    if strategy_conf.strategy_params.kind == "static_bounce":
+        strategy = StaticBounce(
+            logger,
+            aggregator.get_candles(),
+            strategy_conf.strategy_params.tick_size,
+            strategy_conf.strategy_params.proximity_threshold,  # proximity_threshold unused when simply discovering signal data
+            strategy_conf.strategy_params.reward_ticks,  # reward_ticks unused when simply discovering signal data
+            strategy_conf.strategy_params.risk_ticks,  # risk_ticks unused when simply discovering signal data
+            strategy_conf.strategy_params.tick_tolerance,
+            strategy_conf.strategy_params.min_separation,
+            strategy_conf.strategy_params.top_n,
+            strategy_conf.strategy_params.decay_half_life_days,
+        )
+        strategy.print_static_levels()  # TODO: perhaps change this function name to something more generic like "print_strategy_data"
+    elif strategy_conf.strategy_params.kind == "vwap_fade":
+        raise NotImplementedError("VWAP Fade strategy not implemented")
+    else:
+        raise ValueError(
+            f"Unsupported strategy kind: {strategy_conf.strategy_params.kind}"
+        )
 
 
 if __name__ == "__main__":

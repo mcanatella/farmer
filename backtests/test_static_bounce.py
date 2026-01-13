@@ -1,104 +1,111 @@
 import asyncio
 import math
-from datetime import date
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import pytest
 from tabulate import tabulate
 
-from api import (
-    BacktestRequest,
-    BacktestResult,
-    StaticBounceParams,
-    run_static_bounce_async,
-)
+from api import run_static_bounce_async
 from config import init_null_logger
+from models import (
+    AggregationParams,
+    BacktestConfig,
+    BacktestResult,
+    CsvDataSource,
+    StaticBounceParams,
+    StrategyConfig,
+)
 
 
 def run_static_bounce_backtest(
     data_dir: Path,
-    backtest_date: date,
+    dates: List[str],
     symbols: List[str],
-    proximity_threshold: float = 0.03,
-    reward_points: float = 0.20,
-    risk_points: float = 0.10,
-    price_tolerance: float = 0.05,
+    tick_size: float = 0.01,
+    proximity_threshold: int = 3,
+    reward_ticks: int = 20,
+    risk_ticks: int = 10,
+    tick_tolerance: int = 5,
     min_separation: int = 10,
     top_n: int = 5,
     decay_half_life_days: float = 15.0,
     lookback_days: int = 10,
-) -> BacktestResult:
+) -> List[BacktestResult]:
     """
     Sync wrapper so tests can stay non-async.
     """
     logger = init_null_logger()
 
-    params = StaticBounceParams(
-        kind="static_bounce",
-        proximity_threshold=proximity_threshold,
-        reward_points=reward_points,
-        risk_points=risk_points,
-        price_tolerance=price_tolerance,
-        min_separation=min_separation,
-        top_n=top_n,
-        decay_half_life_days=decay_half_life_days,
+    config = BacktestConfig(
+        name="static_bounce_backtest",
+        dates=dates,
+        strategy=StrategyConfig(
+            name="static_bounce_strategy",
+            aggregation_params=AggregationParams(
+                lookback_days=lookback_days,
+                data_source=CsvDataSource(
+                    data_dir=str(data_dir),
+                    symbols=symbols,
+                ),
+                candle_length=5,
+                unit="minutes",
+            ),
+            strategy_params=StaticBounceParams(
+                tick_size=tick_size,
+                proximity_threshold=proximity_threshold,
+                reward_ticks=reward_ticks,
+                risk_ticks=risk_ticks,
+                tick_tolerance=tick_tolerance,
+                min_separation=min_separation,
+                top_n=top_n,
+                decay_half_life_days=decay_half_life_days,
+            ),
+        ),
     )
 
-    req = BacktestRequest(
-        data_dir=data_dir,
-        backtest_date=backtest_date,
-        symbols=symbols,
-        lookback_days=lookback_days,
-        candle_length=5,
-        unit="minutes",
-        params=params,
-    )
-
-    return asyncio.run(run_static_bounce_async(req, logger))
+    return asyncio.run(run_static_bounce_async(config, logger))
 
 
 @pytest.mark.parametrize(
-    "backtest_date",
-    [
-        date(2025, 12, 1),
-        date(2025, 12, 2),
-        date(2025, 12, 3),
-        date(2025, 12, 4),
-        date(2025, 12, 5),
-        date(2025, 12, 7),
-        date(2025, 12, 8),
-        date(2025, 12, 9),
-        date(2025, 12, 10),
-        date(2025, 12, 11),
-        date(2025, 12, 12),
-        date(2025, 12, 14),
-    ],
-    ids=lambda d: d.strftime("%Y%m%d"),
-)
-@pytest.mark.parametrize(
-    "proximity_threshold,reward_points,risk_points,price_tolerance,"
+    "dates,tick_size,proximity_threshold,reward_ticks,risk_ticks,tick_tolerance,"
     "min_separation,top_n,decay_half_life_days,lookback_days",
     [
         pytest.param(
-            0.03,  # proximity_threshold
-            0.20,  # reward_points
-            0.10,  # risk_points
-            0.05,  # price_tolerance
-            10,  # min_separation
-            10,  # top_n
-            15.0,  # decay_half_life_days
-            10,  # lookback_days
+            [
+                "20251201",
+                "20251202",
+                "20251203",
+                "20251204",
+                "20251205",
+                "20251207",
+                "20251208",
+                "20251209",
+                "20251210",
+                "20251211",
+                "20251212",
+                "20251214",
+            ],
+            0.01,
+            3,
+            20,
+            10,
+            5,
+            10,
+            10,
+            15.0,
+            10,
             id="baseline",
         ),
     ],
 )
 def test_static_bounce(
-    backtest_date: date,
-    proximity_threshold: float,
-    reward_points: float,
-    risk_points: float,
-    price_tolerance: float,
+    dates: List[str],
+    tick_size: float,
+    proximity_threshold: int,
+    reward_ticks: int,
+    risk_ticks: int,
+    tick_tolerance: int,
     min_separation: int,
     top_n: int,
     decay_half_life_days: float,
@@ -108,14 +115,15 @@ def test_static_bounce(
     data_dir = repo_root / "cl_historical"
     symbols = ["CLZ5", "CLF6"]
 
-    res = run_static_bounce_backtest(
+    results = run_static_bounce_backtest(
         data_dir=data_dir,
-        backtest_date=backtest_date,
+        dates=dates,
         symbols=symbols,
+        tick_size=tick_size,
         proximity_threshold=proximity_threshold,
-        reward_points=reward_points,
-        risk_points=risk_points,
-        price_tolerance=price_tolerance,
+        reward_ticks=reward_ticks,
+        risk_ticks=risk_ticks,
+        tick_tolerance=tick_tolerance,
         min_separation=min_separation,
         top_n=top_n,
         decay_half_life_days=decay_half_life_days,
@@ -123,28 +131,44 @@ def test_static_bounce(
     )
 
     # Basic sanity assertions
-    assert isinstance(res, BacktestResult)
-    assert math.isfinite(res.total_pnl)
+    for r in results:
+        assert isinstance(r, BacktestResult)
+        assert math.isfinite(r.total_pnl)
 
-    # Print a one-row table so you can compare PnL across params
-    row = [
-        proximity_threshold,
-        reward_points,
-        risk_points,
-        price_tolerance,
-        min_separation,
-        top_n,
-        round(res.total_pnl, 2),
+    rows: List[List[Union[str, float]]] = [
+        [
+            proximity_threshold,
+            reward_ticks,
+            risk_ticks,
+            tick_tolerance,
+            min_separation,
+            top_n,
+            round(r.total_pnl, 2),
+        ]
+        for r in results
     ]
+
+    rows.append(
+        [
+            "TOTAL",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            round(sum(r.total_pnl for r in results), 2),
+        ]
+    )
+
     headers = [
         "prox_thresh",
         "reward",
         "risk",
-        "price_tol",
+        "tick_tol",
         "min_sep",
         "top_n",
         "PnL",
     ]
 
     print()
-    print(tabulate([row], headers=headers, tablefmt="pretty"))
+    print(tabulate(rows, headers=headers, tablefmt="pretty"))

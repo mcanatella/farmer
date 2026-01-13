@@ -16,7 +16,7 @@ def static_bounce_handler(
     Updates the state with PnL when a position is closed.
     """
     if state["position"] is None:
-        state["position"] = state["strategy"].check(tick.price, tick.t)
+        state["position"] = state["strategy"].check(tick, tick.t)
         if state["position"] is None:
             return
 

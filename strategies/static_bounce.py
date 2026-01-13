@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
+from core import Tick
+
 
 class StaticLevel:
     def __init__(
@@ -30,10 +32,11 @@ class StaticBounce:
         self,
         logger: logging.Logger,
         candles: List[Dict[str, Any]],
-        proximity_threshold: float,
-        reward_points: float,
-        risk_points: float,
-        price_tolerance: float,
+        tick_size: float,
+        proximity_threshold: int,
+        reward_ticks: int,
+        risk_ticks: int,
+        tick_tolerance: int,
         min_separation: int,
         top_n: int,
         decay_half_life_days: float,
@@ -44,13 +47,16 @@ class StaticBounce:
         # Contains data for historical analysis
         self.candles = candles
 
+        # Tick size for the instrument being traded
+        self.tick_size = tick_size
+
         # Bounce parameters
         self.proximity_threshold = proximity_threshold
-        self.reward_points = reward_points
-        self.risk_points = risk_points
+        self.reward_ticks = reward_ticks
+        self.risk_ticks = risk_ticks
 
         # Static level calculation parameters applied to historical candles
-        self.price_tolerance = price_tolerance
+        self.tick_tolerance = tick_tolerance
         self.min_separation = min_separation
         self.top_n = top_n
         self.decay_half_life_days = decay_half_life_days
@@ -72,7 +78,7 @@ class StaticBounce:
         # Last level traded to avoid retests
         self.last_level_traded: float | None = None
 
-    def check(self, price, timestamp=None) -> Dict[str, Any] | None:
+    def check(self, tick: Tick, timestamp: Any = None) -> Dict[str, Any] | None:
         if not self.levels:
             return None
 
@@ -80,16 +86,16 @@ class StaticBounce:
         signals = []
         for level_key in self.levels:
             level = self.levels[level_key]
-            distance = abs(price - level.value)
+            distance = abs(tick.price - level.value)
 
             # If the current price is close enough to the level, then we may need to emit a LONG or
             # SHORT signal.
-            if distance <= self.proximity_threshold:
+            if distance <= (self.proximity_threshold * self.tick_size):
                 # Emit a SHORT signal if the current price is slightly under a resistance level
-                if price < level.value and level.resistance:
+                if tick.price < level.value and level.resistance:
                     signals.append((level_key, level, distance, "SHORT"))
                 # Emit a LONG signal if the current price is slightly over a support level
-                elif price > level.value and level.support:
+                elif tick.price > level.value and level.support:
                     signals.append((level_key, level, distance, "LONG"))
 
         # If signals is empty, then there is nothing to act on for now
@@ -103,19 +109,19 @@ class StaticBounce:
         if self.last_level_traded == level_key:
             return None
 
-        entry = price
+        entry = tick.price
 
         take_profit = (
-            entry + self.reward_points
+            entry + self.reward_ticks * self.tick_size
             if direction == "LONG"
-            else entry - self.reward_points
+            else entry - self.reward_ticks * self.tick_size
         )
         take_profit = round(take_profit, 2)
 
         stop_loss = (
-            entry - self.risk_points
+            entry - self.risk_ticks * self.tick_size
             if direction == "LONG"
-            else entry + self.risk_points
+            else entry + self.risk_ticks * self.tick_size
         )
         stop_loss = round(stop_loss, 2)
 
@@ -147,7 +153,7 @@ class StaticBounce:
         self.last_level_traded = None
 
     def calculate_static_levels(self) -> None:
-        # Convert the raw candle data (list of dicts) into a DataFrame
+        # Convert the raw candle data from a list of dicts into a DataFrame
         df = pd.DataFrame(self.candles)
         df["t"] = pd.to_datetime(df["t"])
         df.set_index("t", inplace=True)
@@ -248,7 +254,10 @@ class StaticBounce:
             found_cluster = False
 
             for cluster in clusters:
-                if abs(price - cluster["price"]) <= self.price_tolerance:
+                if (
+                    abs(price - cluster["price"])
+                    <= self.tick_tolerance * self.tick_size
+                ):
                     cluster["hits"].append(price)
                     cluster["volumes"].append(volume)
                     cluster["timestamps"].append(ts)

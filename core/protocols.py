@@ -1,4 +1,4 @@
-from typing import Any, AsyncIterator, Iterator, Protocol
+from typing import Any, AsyncIterator, Dict, Iterator, Protocol
 
 from .types import Tick
 
@@ -15,9 +15,9 @@ class AsyncTicker(Protocol):
 
 # Pseudo interface for anything that can aggregate candles
 class Aggregator(Protocol):
-    def get_candles(self) -> list[dict[str, Any]]: ...
+    def get_candles(self) -> list[Dict[str, Any]]: ...
 
 
 # Pseudo interface for anything that can implement a trading strategy
 class Strategy(Protocol):
-    def check(self, price: float, timestamp: Any = None) -> dict[str, Any] | None: ...
+    def check(self, tick: Tick, timestamp: Any = None) -> Dict[str, Any] | None: ...
