@@ -1,11 +1,13 @@
 from .models import (
     AggregationParams,
+    BacktestConfig,
+    BacktestResult,
     CsvDataSource,
     DataSource,
     ProjectXDataSource,
     StaticBounceParams,
+    StrategyConfig,
     StrategyParams,
-    StrategyQuery,
     VwapFadeParams,
 )
 
@@ -17,5 +19,7 @@ __all__ = [
     "ProjectXDataSource",
     "DataSource",
     "AggregationParams",
-    "StrategyQuery",
+    "StrategyConfig",
+    "BacktestConfig",
+    "BacktestResult",
 ]

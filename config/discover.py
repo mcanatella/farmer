@@ -1,14 +1,13 @@
-from pathlib import Path
 from typing import List
 
 import yaml
 from pydantic import BaseModel
 
-from models import StrategyQuery
+from models import StrategyConfig
 
 
 class DiscoverSettings(BaseModel):
-    strategies: List[StrategyQuery]
+    strategies: List[StrategyConfig]
 
     @classmethod
     def build(cls, args) -> "DiscoverSettings":

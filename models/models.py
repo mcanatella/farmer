@@ -48,7 +48,18 @@ class AggregationParams(BaseModel):
     unit: str = "minutes"
 
 
-class StrategyQuery(BaseModel):
+class StrategyConfig(BaseModel):
     name: str
     aggregation_params: AggregationParams
     strategy_params: StrategyParams
+
+
+class BacktestConfig(BaseModel):
+    name: str
+    dates: List[str]
+    strategy: StrategyConfig
+
+
+class BacktestResult(BaseModel):
+    total_pnl: float
+    trades_file: str

@@ -1,118 +1,27 @@
-from typing import Dict, List
+from typing import List
 
 import yaml
 from pydantic import BaseModel
 
+from models import BacktestConfig
+
 
 class BacktestSettings(BaseModel):
-    backtest_date: str
-    data_dir: str
-    symbols: List[str]
-
-    days: int = 10
-    candle_length: int = 5
-    unit: str = "minutes"
-    top_n: int = 5
-    min_separation: int = 10
-
-    # It doesn't make sense to have defaults for tick_tolerance, as it must be tuned depending on the asset being analyzed
-    tick_tolerance: int
+    backtests: List[BacktestConfig]
 
     @classmethod
     def build(cls, args) -> "BacktestSettings":
         with open(args.config, "r") as f:
             raw = yaml.safe_load(f) or {}
 
-        data = raw.get("backtest", {})
+        data = raw.get("backtests", [])
 
-        overrides: Dict = {}
-
-        if args.backtest_date is not None:
-            overrides["backtest_date"] = args.backtest_date
-
-        if args.data_dir is not None:
-            overrides["data_dir"] = args.data_dir
-
-        if args.symbols is not None:
-            overrides["symbols"] = args.symbols
-
-        if args.days is not None:
-            overrides["days"] = args.days
-
-        if args.candle_length is not None:
-            overrides["candle_length"] = args.candle_length
-
-        if args.unit is not None:
-            overrides["unit"] = args.unit
-
-        if args.tick_tolerance is not None:
-            overrides["tick_tolerance"] = args.tick_tolerance
-
-        if args.min_separation is not None:
-            overrides["min_separation"] = args.min_separation
-
-        if args.top_n is not None:
-            overrides["top_n"] = args.top_n
-
-        if overrides:
-            data.update(overrides)
-
-        return cls(**data)
-
-    def custom_validate(self) -> None:
-        pass
+        return cls(backtests=data)
 
     @classmethod
     def set_args(cls, parser):
-        # Config file settings
         parser.add_argument(
             "--config", type=str, default="config.yaml", help="Config file path"
         )
 
-        # Backtest settings
-        parser.add_argument(
-            "--backtest-date",
-            type=str,
-            help="The date to backtest",
-        )
-        parser.add_argument(
-            "--data-dir",
-            type=str,
-            help="Specifies the data directory containing tick data files",
-        )
-        parser.add_argument(
-            "--symbols",
-            nargs="+",
-            type=str,
-            help="List of symbols to analyze",
-        )
-
-        # Aggregator settings
-        parser.add_argument(
-            "--days",
-            type=int,
-            help="The number of days back (from now) to analyze",
-        )
-        parser.add_argument("--candle-length", type=int, help="The candle timeframe")
-        parser.add_argument(
-            "--unit",
-            type=str,
-            help="The unit used to measure the candle length; only minutes or hours supported",
-        )
-
-        # Static bounce strategy settings
-        parser.add_argument(
-            "--tick-tolerance",
-            type=int,
-            help="Tick range within which levels are considered the same",
-        )
-        parser.add_argument(
-            "--min-separation",
-            type=int,
-            help="Number of candles before/after to consider a high/low isolated",
-        )
-        parser.add_argument(
-            "--top-n",
-            type=int,
-            help="Number of support/resistance levels to return",
-        )
+        parser.add_argument("--name", type=str, help="The name of the backtest to run")
