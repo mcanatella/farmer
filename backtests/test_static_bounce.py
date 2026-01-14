@@ -68,24 +68,15 @@ def run_static_bounce_backtest(
 
 
 @pytest.mark.parametrize(
-    "dates,tick_size,proximity_threshold,reward_ticks,risk_ticks,tick_tolerance,"
+    "dates,symbols,tick_size,proximity_threshold,reward_ticks,risk_ticks,tick_tolerance,"
     "min_separation,top_n,decay_half_life_days,lookback_days",
     [
         pytest.param(
             [
-                "20251201",
-                "20251202",
-                "20251203",
-                "20251204",
-                "20251205",
-                "20251207",
-                "20251208",
-                "20251209",
-                "20251210",
-                "20251211",
                 "20251212",
                 "20251214",
             ],
+            ["CLZ5", "CLF6"],
             0.01,
             3,
             20,
@@ -101,6 +92,7 @@ def run_static_bounce_backtest(
 )
 def test_static_bounce(
     dates: List[str],
+    symbols: List[str],
     tick_size: float,
     proximity_threshold: int,
     reward_ticks: int,
@@ -111,9 +103,8 @@ def test_static_bounce(
     decay_half_life_days: float,
     lookback_days: int,
 ) -> None:
-    repo_root = Path(__file__).resolve().parents[1]
-    data_dir = repo_root / "cl_historical"
-    symbols = ["CLZ5", "CLF6"]
+    test_dir = Path(__file__).resolve().parent
+    data_dir = test_dir / "testdata"
 
     results = run_static_bounce_backtest(
         data_dir=data_dir,

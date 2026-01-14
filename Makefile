@@ -1,4 +1,4 @@
-.PHONY: lint mypy isort
+.PHONY: lint mypy isort test
 
 lint:
 	black . --check
@@ -8,3 +8,6 @@ mypy:
 
 isort:
 	isort . --check-only --diff
+
+test:
+	pytest -v -s
