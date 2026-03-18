@@ -54,6 +54,9 @@ def main(args) -> None:
             start_date,
             today,
             strategy_conf.aggregation_params.data_source.symbols,
+            strategy_conf.aggregation_params.data_source.pct_margin,
+            strategy_conf.aggregation_params.data_source.abs_margin,
+            strategy_conf.aggregation_params.data_source.min_total_volume,
             candle_length=strategy_conf.aggregation_params.candle_length,
             unit=strategy_conf.aggregation_params.unit,
         )
@@ -75,6 +78,7 @@ def main(args) -> None:
             strategy_conf.strategy_params.min_separation,
             strategy_conf.strategy_params.top_n,
             strategy_conf.strategy_params.decay_half_life_days,
+            strategy_conf.strategy_params.precision,
         )
     elif strategy_conf.strategy_params.kind == "vwap_fade":
         raise NotImplementedError("VWAP Fade strategy not implemented")

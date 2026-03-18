@@ -13,21 +13,38 @@ class StaticBounceParams(BaseModel):
     min_separation: int = 10
     top_n: int = 10
     decay_half_life_days: float = 15.0
+    precision: int = 2
 
 
-class VwapFadeParams(BaseModel):
-    kind: Literal["vwap_fade"] = "vwap_fade"
-    entry_band: float = 0.5
-    stop_band: float = 1.0
+class StaticBounceWithDeltaParams(BaseModel):
+    tick_size: float
+    proximity_threshold: int
+    reward_ticks: int
+    risk_ticks: int
+    tick_tolerance: int
+    kind: Literal["static_bounce_with_delta"] = "static_bounce_with_delta"
+    min_separation: int = 10
+    top_n: int = 10
+    decay_half_life_days: float = 15.0
+    precision: int = 2
+    delta_window_seconds: float = 300.0
+    attempt_seconds: int = 30
+    delta_ratio_threshold: float = 0.20
+    min_response_ticks: int = 3
+    max_penetration_ticks: int = 4
+    cooldown_seconds: int = 120
 
 
-StrategyParams = Union[StaticBounceParams, VwapFadeParams]
+StrategyParams = Union[StaticBounceParams, StaticBounceWithDeltaParams]
 
 
 class CsvDataSource(BaseModel):
     kind: Literal["csv"] = "csv"
     data_dir: str
     symbols: List[str]
+    pct_margin: float
+    abs_margin: int
+    min_total_volume: int
 
 
 class ProjectXDataSource(BaseModel):

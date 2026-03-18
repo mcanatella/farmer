@@ -1,8 +1,6 @@
 import logging
 from typing import Any, Dict, List
 
-import numpy as np
-import pandas as pd
 from tabulate import tabulate
 
 from calculations import calculate_static_levels
@@ -22,6 +20,7 @@ class StaticBounce:
         min_separation: int,
         top_n: int,
         decay_half_life_days: float,
+        precision: int,
     ) -> None:
         # Logs trade signals
         self.logger = logger
@@ -42,12 +41,11 @@ class StaticBounce:
         self.min_separation = min_separation
         self.top_n = top_n
         self.decay_half_life_days = decay_half_life_days
+        self.precision = precision
 
         # Static levels
         self.support: List[Dict[str, Any]] = []
         self.resistance: List[Dict[str, Any]] = []
-
-        # self.calculate_static_levels()
         self.support, self.resistance = calculate_static_levels(
             self.candles,
             self.min_separation,
@@ -57,22 +55,15 @@ class StaticBounce:
             self.decay_half_life_days,
         )
 
-        # Convert support and resistance to a single dictionary for fast lookups by value when
-        # checking for signals.
-        # Support and resistan
-        # Because this is a demo strategy, we will treat support and resistance the same.
         self.levels = {}
         for lvl in self.support + self.resistance:
-            # self.levels[lvl.value] = lvl
-            # Round level price to 2 decimal places for consistency
-            lvl["price"] = round(lvl["price"], 2)  # TODO: make precision configurable
+            # Round level price to the specified precision for consistency
+            lvl["price"] = round(lvl["price"], self.precision)
 
             # This particular strategy implementation treats all levels as both support and resistance
             lvl["support"] = True
             lvl["resistance"] = True
             self.levels[lvl["price"]] = lvl
-
-        # {'price': 60.615, 'hits': [np.float64(60.59), np.float64(60.64)], 'volumes': [np.float64(1028.0), np.float64(1779.0)], 'timestamps': [Timestamp('2026-01-22 08:30:00+0000', tz='UTC'), Timestamp('2026-01-21 16:00:00+0000', tz='UTC')], 'score': 4143.313950708893}, 61.86: {'price': 61.86, 'hits': [np.float64(61.86)], 'volumes': [np.float64(4040.0)], 'timestamps': [Timestamp('2026-01-27 13:50:00+0000', tz='UTC')], 'score': 3855.7036815599336}
 
         # Last level traded to avoid retests
         self.last_level_traded: float | None = None
@@ -115,14 +106,14 @@ class StaticBounce:
             if direction == "LONG"
             else entry - self.reward_ticks * self.tick_size
         )
-        take_profit = round(take_profit, 2)
+        take_profit = round(take_profit, self.precision)
 
         stop_loss = (
             entry - self.risk_ticks * self.tick_size
             if direction == "LONG"
             else entry + self.risk_ticks * self.tick_size
         )
-        stop_loss = round(stop_loss, 2)
+        stop_loss = round(stop_loss, self.precision)
 
         self.logger.info(
             f"{direction} signal from {level_key} at {entry}",
@@ -156,7 +147,11 @@ class StaticBounce:
 
         support_table = tabulate(
             [
-                (f"{lvl['price']:.2f}", len(lvl["hits"]), f"{lvl['score']:.2f}")
+                (
+                    f"{lvl['price']:.{self.precision}f}",
+                    len(lvl["hits"]),
+                    f"{lvl['score']:.2f}",
+                )
                 for lvl in self.support
             ],
             headers,
@@ -165,7 +160,11 @@ class StaticBounce:
 
         resistance_table = tabulate(
             [
-                (f"{lvl['price']:.2f}", len(lvl["hits"]), f"{lvl['score']:.2f}")
+                (
+                    f"{lvl['price']:.{self.precision}f}",
+                    len(lvl["hits"]),
+                    f"{lvl['score']:.2f}",
+                )
                 for lvl in self.resistance
             ],
             headers,

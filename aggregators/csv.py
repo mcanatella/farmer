@@ -42,17 +42,18 @@ def _csv_aggregator_handler(
     vols = state["symbol_volumes"]
     current = state["current_symbol"]
 
-    pct_margin = 0.10  # 10% margin to switch contracts
-    abs_margin = 200  # contracts lead required (tune)
-    min_total_volume = 1000  # minimum total volume to consider switching
+    # pct_margin = 0.10  # 10% margin to switch contracts
+    # abs_margin = 200  # contracts lead required (in volume) to switch regardless of pct margin
+    # min_total_volume = 1000  # minimum total volume to consider switching
 
     leader = max(vols, key=vols.get)
     if leader != current:
         total = sum(vols.values())
         lead = vols[leader] - vols[current]
 
-        if total >= min_total_volume and (
-            lead >= abs_margin or vols[leader] >= vols[current] * (1 + pct_margin)
+        if total >= state["min_total_volume"] and (
+            lead >= state["abs_margin"]
+            or vols[leader] >= vols[current] * (1 + state["pct_margin"])
         ):
             logger.info(
                 f"Switching from {current} to {leader} at {tick.t.isoformat()} with volumes: {vols}"
@@ -91,6 +92,9 @@ class CsvAggregator:
         start_date: date,
         end_date: date,
         symbols: List[str],
+        pct_margin: float,
+        abs_margin: int,
+        min_total_volume: int,
         candle_length: Optional[int] = 5,  # TODO: Actually use this
         unit: Optional[str] = "minutes",  # TODO: Actually use this
     ) -> None:
@@ -101,6 +105,9 @@ class CsvAggregator:
 
         self.symbols = symbols
         self.start_symbol = self.symbols[0]
+        self.pct_margin = pct_margin
+        self.abs_margin = abs_margin
+        self.min_total_volume = min_total_volume
 
         self.unit = 3 if unit == "hours" else 2
         self.candle_length = candle_length
@@ -142,6 +149,9 @@ class CsvAggregator:
             "current_symbol": None,
             "allowed_symbols": self.symbols,
             "symbols_used": set(),
+            "pct_margin": self.pct_margin,
+            "abs_margin": self.abs_margin,
+            "min_total_volume": self.min_total_volume,
         }
 
         for fp in files:

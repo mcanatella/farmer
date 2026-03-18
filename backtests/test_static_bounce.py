@@ -31,6 +31,7 @@ def run_static_bounce_backtest(
     top_n: int = 5,
     decay_half_life_days: float = 15.0,
     lookback_days: int = 10,
+    precision: int = 2,
 ) -> List[BacktestResult]:
     """
     Sync wrapper so tests can stay non-async.
@@ -47,6 +48,9 @@ def run_static_bounce_backtest(
                 data_source=CsvDataSource(
                     data_dir=str(data_dir),
                     symbols=symbols,
+                    pct_margin=0.10,
+                    abs_margin=200,
+                    min_total_volume=1000,
                 ),
                 candle_length=5,
                 unit="minutes",
@@ -60,6 +64,7 @@ def run_static_bounce_backtest(
                 min_separation=min_separation,
                 top_n=top_n,
                 decay_half_life_days=decay_half_life_days,
+                precision=precision,
             ),
         ),
     )
@@ -69,7 +74,7 @@ def run_static_bounce_backtest(
 
 @pytest.mark.parametrize(
     "dates,symbols,tick_size,proximity_threshold,reward_ticks,risk_ticks,tick_tolerance,"
-    "min_separation,top_n,decay_half_life_days,lookback_days",
+    "min_separation,top_n,decay_half_life_days,lookback_days,precision",
     [
         pytest.param(
             [
@@ -86,6 +91,7 @@ def run_static_bounce_backtest(
             10,
             15.0,
             10,
+            2,
             id="baseline",
         ),
     ],
@@ -102,6 +108,7 @@ def test_static_bounce(
     top_n: int,
     decay_half_life_days: float,
     lookback_days: int,
+    precision: int,
 ) -> None:
     test_dir = Path(__file__).resolve().parent
     data_dir = test_dir / "testdata"
@@ -119,6 +126,7 @@ def test_static_bounce(
         top_n=top_n,
         decay_half_life_days=decay_half_life_days,
         lookback_days=lookback_days,
+        precision=precision,
     )
 
     # Basic sanity assertions
@@ -134,7 +142,7 @@ def test_static_bounce(
             tick_tolerance,
             min_separation,
             top_n,
-            round(r.total_pnl, 2),
+            round(r.total_pnl, precision),
         ]
         for r in results
     ]
@@ -147,7 +155,7 @@ def test_static_bounce(
             "-",
             "-",
             "-",
-            round(sum(r.total_pnl for r in results), 2),
+            round(sum(r.total_pnl for r in results), precision),
         ]
     )
 

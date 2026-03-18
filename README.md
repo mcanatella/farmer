@@ -1,167 +1,132 @@
-## To Do
-- Finish adding type annotations and setup type checker
-- Extend support to multiple API schemas (only [ProjectX](https://gateway.docs.projectx.com/docs/intro) currently supported)
-- Update SignalR websocket feed to implement the Ticker protocol (skeleton below)
-- Implement `--auto` feature which will allow the bot to auto discover the levels it watches on startup
-- Convert `backtest.py` to use an actual test framework
-- Setup CI pipeline which, at a minimum, runs the type checker and linter
+# 📈 Level Farmer (Working Name)
 
-## Config Example
+A modular, event-driven trading framework for developing, testing, and deploying systematic futures trading strategies.
 
-```yaml
-# API base for querying candles and managing orders
-api_base: "https://api.topstepx.com"
+This project is designed to support multiple strategy types, with reusable building blocks such as:
 
-# API base for realtime market data feed
-market_hub_base: "https://rtc.topstepx.com/hubs/market"
+- Static price levels
+- Order flow (delta, volume)
+- Time-based and event-based signals
+- Custom indicators and analytics
 
-# Account info
-user: "myuser"
-api_key: "abc123"
-account_id: 123456789
+The goal is to create a clean, extensible system where strategies can be developed once and reused across:
 
-# Contract ID used by the bot and discovery tool
-contract_id: "CON.F.US.CLE.V25"
+- Backtesting
+- Simulation / optimization
+- Live trading or signal dispatch
 
-# Number of contracts per trade the bot / backtest tool will buy / sell when signaled
-contract_size: 1
+## 🚀 Overview
 
-# Manually configured levels that the bot (farm.py) will watch on startup
-levels:
-  - value: 61.77
-    support: true
-    resistance: true
-    proximity_threshold: .02
-    reward_points: .10
-    risk_points: .15
-  - value: 62.41
-    support: true
-    resistance: true
-    proximity_threshold: .02
-    reward_points: .10
-    risk_points: .15
-  - value: 62.73
-    support: true
-    resistance: true
-    proximity_threshold: .02
-    reward_points: .10
-    risk_points: .15
+This framework processes tick-level market data and allows strategies to:
+
+1. Analyze historical context (e.g. levels, indicators)
+2. React to incoming ticks in real time
+3. Emit structured trade signals
+
+It is designed around deterministic, event-driven execution, making it suitable for both research and production systems.
+
+## 🧱 Core Architecture
+```
+Tick Data → Engine → Strategy → Signal → (Execution / Dispatch)
 ```
 
-## Usage Examples
+### Key Components
 
-### The Discovery Tool
+#### 1. **Tick Engine**
+- Streams tick data (CSV or future live feeds)
+- Processes ticks sequentially
+- Calls strategy logic on every tick
 
-The discovery tool can be used to identify static price levels to predict reversals. In the following example I query the top 5 support and resistance levels using 5 minute candles over the past 10 days. For confirmations beyond the first, the spike or valley must have occurred within + or - the `price-tolerance`. In this example, the `price-tolerance` was $0.05.
+#### 2. **Strategy Modules**
+- Encapsulate trading logic
+- Maintain internal state
+- Emit signals when conditions are met
+- Fully pluggable and configurable
 
-```bash
-(venv) example@rd01:~/Code/level-farmer$ python discover.py \
-  --days 10 \
-  --top-n 5 \
-  --min-separation 10 \
-  --candle-length 5 \
-  --price-tolerance .05 \
-  --config config.cl.yaml
+#### 3. **Backtest Runner**
+- Loads YAML configuration
+- Instantiates strategies with parameters
+- Runs strategies against historical data
+- Outputs results (PnL, logs, diagnostics)
 
-Top Support Levels:
-  Level: 63.62 | Hits: 2 | Score: 6563.00
-  Level: 62.26 | Hits: 2 | Score: 6003.00
-  Level: 63.17 | Hits: 2 | Score: 3219.00
-  Level: 62.95 | Hits: 4 | Score: 2796.00
-  Level: 61.94 | Hits: 2 | Score: 2753.00
+#### 4. **Data Sources**
+- CSV (historical tick data)
+- API (TopstepX / ProjectX)
+- Live market feeds
 
-Top Resistance Levels:
-  Level: 63.51 | Hits: 3 | Score: 10593.00
-  Level: 63.98 | Hits: 1 | Score: 8438.00
-  Level: 62.73 | Hits: 3 | Score: 7747.00
-  Level: 63.65 | Hits: 3 | Score: 5662.00
-  Level: 62.65 | Hits: 3 | Score: 2999.00
-```
+## 🧠 Strategy Design Philosophy
 
-### The Backtest Tool (work in progress)
+Strategies are modular, self-contained units that operate on tick data.
 
-Currently, you can run a backtest for a specific day provided you have csv tick data stored in your `data-dir` that conforms to the CME Market Data Platform 3.0 standard. Many test parameters still need to be tuned in code which is why this is marked as a work in progress.
-
-```bash
-(venv) example@rd01:~/Code/level-farmer$ python backtest.py --backtest-date 20250904 --data-dir cl_historical
-2025-09-15 10:00:32 INFO SHORT signal from 63.8 at 63.79
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-03 19:00:00-05:00, End = 2025-09-03 19:06:56-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO LONG signal from 63.27 at 63.3
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 01:31:49-05:00, End = 2025-09-04 02:02:28-05:00, PnL = $-150.00
-2025-09-15 10:00:32 INFO LONG signal from 63.14 at 63.15
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 02:02:28-05:00, End = 2025-09-04 02:13:17-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO SHORT signal from 63.27 at 63.25
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 02:13:17-05:00, End = 2025-09-04 02:53:01-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO LONG signal from 63.14 at 63.15
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 02:53:01-05:00, End = 2025-09-04 03:10:24-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO SHORT signal from 63.27 at 63.25
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 03:10:56-05:00, End = 2025-09-04 03:19:38-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO LONG signal from 63.14 at 63.16
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 04:18:09-05:00, End = 2025-09-04 04:25:02-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO SHORT signal from 63.27 at 63.25
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 04:25:07-05:00, End = 2025-09-04 05:16:43-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO LONG signal from 63.14 at 63.15
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 05:16:43-05:00, End = 2025-09-04 05:35:11-05:00, PnL = $-150.00
-2025-09-15 10:00:32 INFO SHORT signal from 63.27 at 63.25
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 06:23:03-05:00, End = 2025-09-04 06:33:16-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO LONG signal from 63.14 at 63.16
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 07:50:25-05:00, End = 2025-09-04 07:58:03-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO SHORT signal from 63.27 at 63.26
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 07:58:03-05:00, End = 2025-09-04 08:00:44-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO LONG signal from 63.14 at 63.16
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 08:00:44-05:00, End = 2025-09-04 08:09:41-05:00, PnL = $-150.00
-2025-09-15 10:00:32 INFO SHORT signal from 63.27 at 63.25
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 08:34:12-05:00, End = 2025-09-04 08:34:56-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO LONG signal from 63.14 at 63.15
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 08:34:56-05:00, End = 2025-09-04 08:37:06-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO SHORT signal from 63.27 at 63.25
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 08:37:06-05:00, End = 2025-09-04 08:55:55-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO LONG signal from 63.14 at 63.16
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 08:55:55-05:00, End = 2025-09-04 09:03:44-05:00, PnL = $-150.00
-2025-09-15 10:00:32 INFO SHORT signal from 63.27 at 63.25
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 09:06:42-05:00, End = 2025-09-04 09:06:44-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO LONG signal from 63.14 at 63.15
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 09:06:44-05:00, End = 2025-09-04 09:07:28-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO SHORT signal from 63.27 at 63.25
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 09:07:31-05:00, End = 2025-09-04 09:09:59-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO LONG signal from 63.14 at 63.15
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 09:09:59-05:00, End = 2025-09-04 09:23:05-05:00, PnL = $100.00
-2025-09-15 10:00:32 INFO SHORT signal from 63.27 at 63.25
-2025-09-15 10:00:32 INFO Trade completed, Start = 2025-09-04 09:23:05-05:00, End = 2025-09-04 09:27:36-05:00, PnL = $100.00
-```
-
-### The Bot
-
-Starting the bot is straightforward. Once started, it will watch price action and make trades at the configured levels. For now the discovery tool has to be used to identify and manually configured levels, but an `automatic` flag is in the works.
-
-```bash
-(venv) example@rd01:~/Code/level-farmer$ python farm.py --config config.cl.yaml
-{"asctime": "2025-09-14 21:16:41,963", "levelname": "INFO", "name": "root", "message": "level farmer start", "levels": [{"value": 63.98, "name": null, "support": true, "resistance": true, "proximity_threshold": 0.02, "reward_points": 0.1, "risk_points": 0.15}, {"value": 63.51, "name": null, "support": true, "resistance": true, "proximity_threshold": 0.02, "reward_points": 0.1, "risk_points": 0.15}, {"value": 62.26, "name": null, "support": true, "resistance": true, "proximity_threshold": 0.02, "reward_points": 0.1, "risk_points": 0.15}, {"value": 61.78, "name": null, "support": true, "resistance": true, "proximity_threshold": 0.02, "reward_points": 0.1, "risk_points": 0.15}]}
-{"asctime": "2025-09-14 21:16:42,476", "levelname": "INFO", "name": "root", "message": "user opened connection to market hub", "event": "market_hub_connect"}
-{"asctime": "2025-09-14 21:16:42,476", "levelname": "INFO", "name": "root", "message": "subscribed to contract CON.F.US.CLE.V25", "event": "market_hub_subscribe"}
-```
-
-## SignalRTicker Implementation of Ticker Protocol (Skeleton)
-
+### Minimal Interface
 ```python
-class SignalRTicker:
-    def __init__(self, url: str, symbol: str):
-        self.url = url
-        self.symbol = symbol
-        # self._client = YourSignalRClient(url, ...)
-        # self._queue: asyncio.Queue[Tick] = asyncio.Queue()
-
-    async def __aiter__(self) -> AsyncIterator[Tick]:
-        # Example structure:
-        # await self._client.connect()
-        # await self._client.subscribe(self.symbol)
-        #
-        # async def on_message(msg):
-        #     tick = Tick(t=..., price=..., size=..., side=..., symbol=self.symbol)
-        #     await self._queue.put(tick)
-        #
-        # while True:
-        #     tick = await self._queue.get()
-        #     yield tick
-        raise NotImplementedError("Wire up your SignalR client here")
+class Strategy:
+    def check(self, tick: Tick) -> Optional[Signal]:
+        ...
 ```
+
+Each strategy:
+- Receives ticks
+- Maintains internal state
+- Emits signals when appropriate
+
+This design enables:
+- Easy swapping of strategies
+- Independent testing
+- Clean separation of concerns
+- Reuse across backtest and live systems
+
+## 🔌 Plug-and-Play Strategy Modules
+
+Strategies are defined via configuration and instantiated dynamically.
+
+Example:
+```yaml
+strategy:
+  name: "static_bounce_cl"
+  aggregation_params:
+    lookback_days: 10
+    candle_length: 5
+    unit: "minutes"
+  strategy_params:
+    kind: "static_bounce"
+    tick_size: 0.01
+    reward_ticks: 20
+    risk_ticks: 10
+```
+
+You can:
+- Swap strategies without changing the engine
+- Run multiple strategies with different parameters
+- Perform grid searches and parameter sweeps
+
+## 🧰 Strategy Building Blocks
+
+This framework includes reusable components that strategies can leverage, such as:
+- Static Level Calculations
+  - Derived from historical price action
+  - Used for support/resistance detection
+- Delta Windows
+  - Rolling order flow measurement
+  - Tracks aggressive buying vs selling over time
+- Tick Aggregation
+  - Build candles or custom structures from tick data
+
+These are not tied to any single strategy. They are tools that can be combined in different ways.
+
+## 🔄 Backtest → Live Parity
+
+The core goal is to write a strategy module once and run it anywhere. The same strategy module can be used for backtesting via historical data, simulations for parameter tuning and optimization, or realitime signal generation / trade execution.
+
+## 🧪 Development Workflow
+
+1. Define strategy and parameter classes + parameters in YAML
+2. Run backtest via:
+```bash
+python backtest.py --config config.yaml --name my_strategy
+```
+3. Review results and iterate on strategy logic
+
+## ⚠️ Disclaimer
+
+This is an experimental trading framework and not financial advice. Use at your own risk.

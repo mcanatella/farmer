@@ -6,14 +6,14 @@ from .models import (
     DataSource,
     ProjectXDataSource,
     StaticBounceParams,
+    StaticBounceWithDeltaParams,
     StrategyConfig,
     StrategyParams,
-    VwapFadeParams,
 )
 
 __all__ = [
     "StaticBounceParams",
-    "VwapFadeParams",
+    "StaticBounceWithDeltaParams",
     "StrategyParams",
     "CsvDataSource",
     "ProjectXDataSource",

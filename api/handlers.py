@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 from colorama import Fore
 
+from calculations import DeltaEvent
 from config import log_with_color
 from core import Tick
 
@@ -15,6 +16,7 @@ def static_bounce_handler(
     Handler for processing ticks in a StaticBounce backtest.
     Updates the state with PnL when a position is closed.
     """
+    # Handle position
     if state["position"] is None:
         state["position"] = state["strategy"].check(tick, tick.t)
         if state["position"] is None:

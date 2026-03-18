@@ -26,7 +26,7 @@ async def main(args) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Tunable support and resistance level finder"
+        description="Quant trading backtest runner for modular strategies",
     )
     BacktestSettings.set_args(parser)
     args = parser.parse_args()
