@@ -30,7 +30,11 @@ async def run_backtest_async(
     if config.strategy.strategy_params.kind == "static_bounce":
         return await run_static_bounce_async(config, logger)
     elif config.strategy.strategy_params.kind == "static_bounce_with_delta":
-        return await run_static_bounce_with_delta_async(config, logger)
+        # We use the same runner method for both StaticBounce and StaticBounceWithDelta since
+        # the only difference is the strategy logic, not the backtest flow or data requirements.
+        # Note that this may not always be the case for future strategies.
+        # It's ok to implement a new runner method if needed.
+        return await run_static_bounce_async(config, logger)
     else:
         raise ValueError(
             f"Unsupported strategy kind: {config.strategy.strategy_params.kind}"
@@ -94,15 +98,3 @@ async def run_static_bounce_async(
         )
 
     return results
-
-
-async def run_static_bounce_with_delta_async(
-    config: BacktestConfig,
-    logger: Optional[logging.Logger] = None,
-) -> List[BacktestResult]:
-    if logger is None:
-        logger = logging.getLogger("static_bounce_with_delta_backtest_runner")
-
-    return (
-        []
-    )  # Placeholder for future implementation of StaticBounceWithDelta backtesting
