@@ -7,6 +7,7 @@ from tabulate import tabulate
 
 from calculations import DeltaEvent, DeltaWindow, calculate_static_levels
 from core import Tick
+from models import StrategyParams
 
 
 @dataclass
@@ -56,43 +57,36 @@ class StaticBounceWithDelta:
         self,
         logger: logging.Logger,
         candles: List[Dict[str, Any]],
-        tick_size: float,
-        proximity_threshold: int,
-        reward_ticks: int,
-        risk_ticks: int,
-        tick_tolerance: int,
-        min_separation: int,
-        top_n: int,
-        decay_half_life_days: float,
-        precision: int,
-        delta_window: DeltaWindow,
-        attempt_seconds: int = 30,  # how long to wait for confirmation after price enters zone
-        delta_ratio_threshold: float = 0.20,  # 20% imbalance
-        min_response_ticks: int = 3,  # prove bounce/rejection
-        max_penetration_ticks: int = 4,  # avoid "knife through level"
-        cooldown_seconds: int = 120,  # per-level cooldown to prevent spam on chop
+        params: StrategyParams,
     ) -> None:
+        if params.kind != "static_bounce_with_delta":
+            raise ValueError(
+                f"Invalid strategy params for StaticBounceWithDelta: {params.kind}"
+            )
+
         self.logger = logger
         self.candles = candles
-        self.delta_window = delta_window
 
-        self.tick_size = tick_size
-        self.proximity_threshold = proximity_threshold
-        self.reward_ticks = reward_ticks
-        self.risk_ticks = risk_ticks
+        # Standard strategy params
+        self.tick_size = params.tick_size
+        self.proximity_threshold = params.proximity_threshold
+        self.reward_ticks = params.reward_ticks
+        self.risk_ticks = params.risk_ticks
 
-        self.tick_tolerance = tick_tolerance
-        self.min_separation = min_separation
-        self.top_n = top_n
-        self.decay_half_life_days = decay_half_life_days
-        self.precision = precision
+        # Level calculation params
+        self.tick_tolerance = params.tick_tolerance
+        self.min_separation = params.min_separation
+        self.top_n = params.top_n
+        self.decay_half_life_days = params.decay_half_life_days
+        self.precision = params.precision
 
         # Confirmation params
-        self.attempt_seconds = attempt_seconds
-        self.delta_ratio_threshold = delta_ratio_threshold
-        self.min_response_ticks = min_response_ticks
-        self.max_penetration_ticks = max_penetration_ticks
-        self.cooldown_seconds = cooldown_seconds
+        self.delta_window = DeltaWindow(window_seconds=params.delta_window_seconds)
+        self.attempt_seconds = params.attempt_seconds
+        self.delta_ratio_threshold = params.delta_ratio_threshold
+        self.min_response_ticks = params.min_response_ticks
+        self.max_penetration_ticks = params.max_penetration_ticks
+        self.cooldown_seconds = params.cooldown_seconds
 
         # Static levels
         self.support, self.resistance = calculate_static_levels(

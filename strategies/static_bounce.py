@@ -5,6 +5,7 @@ from tabulate import tabulate
 
 from calculations import calculate_static_levels
 from core import Tick
+from models import StrategyParams
 
 
 class StaticBounce:
@@ -12,15 +13,16 @@ class StaticBounce:
         self,
         logger: logging.Logger,
         candles: List[Dict[str, Any]],
-        tick_size: float,
-        proximity_threshold: int,
-        reward_ticks: int,
-        risk_ticks: int,
-        tick_tolerance: int,
-        min_separation: int,
-        top_n: int,
-        decay_half_life_days: float,
-        precision: int,
+        params: StrategyParams,
+        # tick_size: float,
+        # proximity_threshold: int,
+        # reward_ticks: int,
+        # risk_ticks: int,
+        # tick_tolerance: int,
+        # min_separation: int,
+        # top_n: int,
+        # decay_half_life_days: float,
+        # precision: int,
     ) -> None:
         # Logs trade signals
         self.logger = logger
@@ -29,19 +31,19 @@ class StaticBounce:
         self.candles = candles
 
         # Tick size for the instrument being traded
-        self.tick_size = tick_size
+        self.tick_size = params.tick_size
 
         # Bounce parameters
-        self.proximity_threshold = proximity_threshold
-        self.reward_ticks = reward_ticks
-        self.risk_ticks = risk_ticks
+        self.proximity_threshold = params.proximity_threshold
+        self.reward_ticks = params.reward_ticks
+        self.risk_ticks = params.risk_ticks
 
         # Static level calculation parameters applied to historical candles
-        self.tick_tolerance = tick_tolerance
-        self.min_separation = min_separation
-        self.top_n = top_n
-        self.decay_half_life_days = decay_half_life_days
-        self.precision = precision
+        self.tick_tolerance = params.tick_tolerance
+        self.min_separation = params.min_separation
+        self.top_n = params.top_n
+        self.decay_half_life_days = params.decay_half_life_days
+        self.precision = params.precision
 
         # Static levels
         self.support: List[Dict[str, Any]] = []

@@ -33,32 +33,16 @@ def main(args) -> None:
         market_data_client = MarketData(
             strategy_conf.aggregation_params.data_source.base_url, jwt_token
         )
-
         aggregator = ProjectXAggregator(
-            logger,
-            market_data_client,
-            strategy_conf.aggregation_params.data_source.contract_id,
-            strategy_conf.aggregation_params.lookback_days,
-            strategy_conf.aggregation_params.candle_length,
-            unit=strategy_conf.aggregation_params.unit,
+            logger, strategy_conf.aggregation_params, market_data_client
         )
     elif strategy_conf.aggregation_params.data_source.kind == "csv":
         today = datetime.now().date()
         start_date = today - timedelta(
             days=strategy_conf.aggregation_params.lookback_days
         )
-
         aggregator = CsvAggregator(
-            logger,
-            strategy_conf.aggregation_params.data_source.data_dir,
-            start_date,
-            today,
-            strategy_conf.aggregation_params.data_source.symbols,
-            strategy_conf.aggregation_params.data_source.pct_margin,
-            strategy_conf.aggregation_params.data_source.abs_margin,
-            strategy_conf.aggregation_params.data_source.min_total_volume,
-            candle_length=strategy_conf.aggregation_params.candle_length,
-            unit=strategy_conf.aggregation_params.unit,
+            logger, strategy_conf.aggregation_params, start_date, today
         )
     else:
         raise ValueError(
@@ -68,20 +52,8 @@ def main(args) -> None:
     strategy = None
     if strategy_conf.strategy_params.kind == "static_bounce":
         strategy = StaticBounce(
-            logger,
-            aggregator.get_candles(),
-            strategy_conf.strategy_params.tick_size,
-            strategy_conf.strategy_params.proximity_threshold,  # proximity_threshold unused when simply discovering signal data
-            strategy_conf.strategy_params.reward_ticks,  # reward_ticks unused when simply discovering signal data
-            strategy_conf.strategy_params.risk_ticks,  # risk_ticks unused when simply discovering signal data
-            strategy_conf.strategy_params.tick_tolerance,
-            strategy_conf.strategy_params.min_separation,
-            strategy_conf.strategy_params.top_n,
-            strategy_conf.strategy_params.decay_half_life_days,
-            strategy_conf.strategy_params.precision,
+            logger, aggregator.get_candles(), strategy_conf.strategy_params
         )
-    elif strategy_conf.strategy_params.kind == "vwap_fade":
-        raise NotImplementedError("VWAP Fade strategy not implemented")
     else:
         raise ValueError(
             f"Unsupported strategy kind: {strategy_conf.strategy_params.kind}"

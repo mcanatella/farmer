@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from core import Tick, run_engine
+from models import AggregationParams
 from tickers import CsvTicker
 
 FNAME_PREFIX = "glbx-mdp3-"
@@ -13,8 +14,8 @@ FNAME_RE = re.compile(rf"{re.escape(FNAME_PREFIX)}(\d{{8}}){re.escape(FNAME_POST
 
 
 # Helper that floors to the nearest 5-minute mark and returns a datetime object
-def _floor_5min(dt: datetime) -> datetime:
-    m = dt.minute - (dt.minute % 5)
+def _floor_min(dt: datetime, minute_interval: int = 5) -> datetime:
+    m = dt.minute - (dt.minute % minute_interval)
     return dt.replace(minute=m, second=0, microsecond=0)
 
 
@@ -42,10 +43,6 @@ def _csv_aggregator_handler(
     vols = state["symbol_volumes"]
     current = state["current_symbol"]
 
-    # pct_margin = 0.10  # 10% margin to switch contracts
-    # abs_margin = 200  # contracts lead required (in volume) to switch regardless of pct margin
-    # min_total_volume = 1000  # minimum total volume to consider switching
-
     leader = max(vols, key=vols.get)
     if leader != current:
         total = sum(vols.values())
@@ -64,7 +61,7 @@ def _csv_aggregator_handler(
     if tick.symbol != current:
         return
 
-    bkt = _floor_5min(tick.t), tick.symbol
+    bkt = _floor_min(tick.t, state["candle_length"]), tick.symbol
     rec = state["buckets"].get(bkt)
     if rec is None:
         # open=first price, high/low init to price, close updates, volume sums
@@ -88,29 +85,28 @@ class CsvAggregator:
     def __init__(
         self,
         logger: logging.Logger,
-        data_dir: str | Path,
+        params: AggregationParams,
         start_date: date,
         end_date: date,
-        symbols: List[str],
-        pct_margin: float,
-        abs_margin: int,
-        min_total_volume: int,
-        candle_length: Optional[int] = 5,  # TODO: Actually use this
-        unit: Optional[str] = "minutes",  # TODO: Actually use this
     ) -> None:
+        if params.data_source.kind != "csv":
+            raise ValueError(
+                f"Invalid data source for CsvAggregator: {params.data_source.kind}"
+            )
+
         self.logger = logger
-        self.data_dir = Path(data_dir)
+        self.data_dir = Path(params.data_source.data_dir)
+
+        self.symbols = params.data_source.symbols
+        self.start_symbol = self.symbols[0]
+        self.pct_margin = params.data_source.pct_margin
+        self.abs_margin = params.data_source.abs_margin
+        self.min_total_volume = params.data_source.min_total_volume
+        self.unit = params.unit
+        self.candle_length = params.candle_length
+
         self.start_date = start_date
         self.end_date = end_date
-
-        self.symbols = symbols
-        self.start_symbol = self.symbols[0]
-        self.pct_margin = pct_margin
-        self.abs_margin = abs_margin
-        self.min_total_volume = min_total_volume
-
-        self.unit = 3 if unit == "hours" else 2
-        self.candle_length = candle_length
 
         # TODO: Define candle type instead of using a Dict
         self.candles: List[Dict[str, Any]] = []
@@ -131,8 +127,6 @@ class CsvAggregator:
         for sym in self.symbols:
             symbol_volumes[sym] = 0
 
-        # current_symbol = self.start_symbol
-
         # Collect matching files by filename date
         files: List[Path] = []
         for p in sorted(self.data_dir.glob("glbx-mdp3-*.trades.csv")):
@@ -152,6 +146,8 @@ class CsvAggregator:
             "pct_margin": self.pct_margin,
             "abs_margin": self.abs_margin,
             "min_total_volume": self.min_total_volume,
+            "candle_length": self.candle_length,
+            "unit": self.unit,
         }
 
         for fp in files:

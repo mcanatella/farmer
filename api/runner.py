@@ -16,42 +16,9 @@ def _build_strategy(
     config: StrategyConfig, logger: logging.Logger, candles: List[Dict[str, Any]]
 ) -> Strategy:
     if config.strategy_params.kind == "static_bounce":
-        return StaticBounce(
-            logger,
-            candles,
-            config.strategy_params.tick_size,
-            config.strategy_params.proximity_threshold,
-            config.strategy_params.reward_ticks,
-            config.strategy_params.risk_ticks,
-            config.strategy_params.tick_tolerance,
-            config.strategy_params.min_separation,
-            config.strategy_params.top_n,
-            config.strategy_params.decay_half_life_days,
-            config.strategy_params.precision,
-        )
+        return StaticBounce(logger, candles, config.strategy_params)
     elif config.strategy_params.kind == "static_bounce_with_delta":
-        delta_window = DeltaWindow(
-            window_seconds=config.strategy_params.delta_window_seconds
-        )
-        return StaticBounceWithDelta(
-            logger,
-            candles,
-            config.strategy_params.tick_size,
-            config.strategy_params.proximity_threshold,
-            config.strategy_params.reward_ticks,
-            config.strategy_params.risk_ticks,
-            config.strategy_params.tick_tolerance,
-            config.strategy_params.min_separation,
-            config.strategy_params.top_n,
-            config.strategy_params.decay_half_life_days,
-            config.strategy_params.precision,
-            delta_window,
-            attempt_seconds=config.strategy_params.attempt_seconds,
-            delta_ratio_threshold=config.strategy_params.delta_ratio_threshold,
-            min_response_ticks=config.strategy_params.min_response_ticks,
-            max_penetration_ticks=config.strategy_params.max_penetration_ticks,
-            cooldown_seconds=config.strategy_params.cooldown_seconds,
-        )
+        return StaticBounceWithDelta(logger, candles, config.strategy_params)
     else:
         raise ValueError(f"Unsupported strategy kind: {config.strategy_params.kind}")
 
@@ -63,7 +30,11 @@ async def run_backtest_async(
     if config.strategy.strategy_params.kind == "static_bounce":
         return await run_static_bounce_async(config, logger)
     elif config.strategy.strategy_params.kind == "static_bounce_with_delta":
-        return await run_static_bounce_with_delta_async(config, logger)
+        # We use the same runner method for both StaticBounce and StaticBounceWithDelta since
+        # the only difference is the strategy logic, not the backtest flow or data requirements.
+        # Note that this may not always be the case for future strategies.
+        # It's ok to implement a new runner method if needed.
+        return await run_static_bounce_async(config, logger)
     else:
         raise ValueError(
             f"Unsupported strategy kind: {config.strategy.strategy_params.kind}"
@@ -96,16 +67,7 @@ async def run_static_bounce_async(
 
         # Build a list of historical candles over the specified time window via CsvAggregator
         aggregator = CsvAggregator(
-            logger,
-            config.strategy.aggregation_params.data_source.data_dir,
-            start_date,
-            end_date,
-            config.strategy.aggregation_params.data_source.symbols,
-            config.strategy.aggregation_params.data_source.pct_margin,
-            config.strategy.aggregation_params.data_source.abs_margin,
-            config.strategy.aggregation_params.data_source.min_total_volume,
-            candle_length=config.strategy.aggregation_params.candle_length,
-            unit=config.strategy.aggregation_params.unit,
+            logger, config.strategy.aggregation_params, start_date, end_date
         )
         candles = aggregator.get_candles()
 
@@ -136,15 +98,3 @@ async def run_static_bounce_async(
         )
 
     return results
-
-
-async def run_static_bounce_with_delta_async(
-    config: BacktestConfig,
-    logger: Optional[logging.Logger] = None,
-) -> List[BacktestResult]:
-    if logger is None:
-        logger = logging.getLogger("static_bounce_with_delta_backtest_runner")
-
-    return (
-        []
-    )  # Placeholder for future implementation of StaticBounceWithDelta backtesting
