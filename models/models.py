@@ -1,4 +1,4 @@
-from typing import List, Literal, Union
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel
 
@@ -35,7 +35,25 @@ class StaticBounceWithDeltaParams(BaseModel):
     cooldown_seconds: int = 120
 
 
-StrategyParams = Union[StaticBounceParams, StaticBounceWithDeltaParams]
+class MeanReversionEmaParams(BaseModel):
+    tick_size: float
+    entry_distance_ticks: int  # min ticks from EMA to trigger entry
+    risk_ticks: int  # stop loss distance from entry in ticks
+    kind: Literal["mean_reversion_ema"] = "mean_reversion_ema"
+    precision: int = 2
+    ema_period: int = 20  # EMA lookback in candles
+    candle_length: int = 5  # minutes per candle (must match aggregation_params)
+    reward_ticks: int = 0  # only used when target_ema is False
+    target_ema: bool = True  # TP at the EMA level itself
+    max_distance_ticks: Optional[int] = (
+        None  # skip entries if price is too far (knife-catcher guard)
+    )
+    cooldown_seconds: int = 300  # seconds between trades
+
+
+StrategyParams = Union[
+    StaticBounceParams, StaticBounceWithDeltaParams, MeanReversionEmaParams
+]
 
 
 class CsvDataSource(BaseModel):

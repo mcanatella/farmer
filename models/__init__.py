@@ -7,6 +7,7 @@ from .models import (
     ProjectXDataSource,
     StaticBounceParams,
     StaticBounceWithDeltaParams,
+    MeanReversionEmaParams,
     StrategyConfig,
     StrategyParams,
 )
@@ -14,6 +15,7 @@ from .models import (
 __all__ = [
     "StaticBounceParams",
     "StaticBounceWithDeltaParams",
+    "MeanReversionEmaParams",
     "StrategyParams",
     "CsvDataSource",
     "ProjectXDataSource",
