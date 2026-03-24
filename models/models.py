@@ -1,10 +1,11 @@
-from typing import List, Literal, Union
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel
 
 
 class StaticBounceParams(BaseModel):
     tick_size: float
+    tick_value: float
     proximity_threshold: int
     reward_ticks: int
     risk_ticks: int
@@ -18,6 +19,7 @@ class StaticBounceParams(BaseModel):
 
 class StaticBounceWithDeltaParams(BaseModel):
     tick_size: float
+    tick_value: float
     proximity_threshold: int
     reward_ticks: int
     risk_ticks: int
@@ -28,16 +30,33 @@ class StaticBounceWithDeltaParams(BaseModel):
     decay_half_life_days: float = 15.0
     precision: int = 2
     delta_window_seconds: float = 300.0
-    attempt_seconds: int = (
-        30  # how long to wait for confirmation after price enters zone
+    attempt_seconds: int = 30
+    delta_ratio_threshold: float = 0.20
+    min_response_ticks: int = 3
+    max_penetration_ticks: int = 4
+    cooldown_seconds: int = 120
+
+
+class MeanReversionEmaParams(BaseModel):
+    tick_size: float
+    tick_value: float
+    entry_distance_ticks: int  # min ticks from EMA to trigger entry
+    risk_ticks: int  # stop loss distance from entry in ticks
+    kind: Literal["mean_reversion_ema"] = "mean_reversion_ema"
+    precision: int = 2
+    ema_period: int = 20  # EMA lookback in candles
+    candle_length: int = 5  # minutes per candle (must match aggregation_params)
+    reward_ticks: int = 0  # only used when target_ema is False
+    target_ema: bool = True  # TP at the EMA level itself
+    max_distance_ticks: Optional[int] = (
+        None  # skip entries if price is too far (knife-catcher guard)
     )
-    delta_ratio_threshold: float = 0.20  # 20% imbalance by default
-    min_response_ticks: int = 3  # prove bounce/rejection
-    max_penetration_ticks: int = 4  # avoid "knife through level"
-    cooldown_seconds: int = 120  # per-level cooldown to prevent spam on chop
+    cooldown_seconds: int = 300  # seconds between trades
 
 
-StrategyParams = Union[StaticBounceParams, StaticBounceWithDeltaParams]
+StrategyParams = Union[
+    StaticBounceParams, StaticBounceWithDeltaParams, MeanReversionEmaParams
+]
 
 
 class CsvDataSource(BaseModel):

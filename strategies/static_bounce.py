@@ -14,16 +14,10 @@ class StaticBounce:
         logger: logging.Logger,
         candles: List[Dict[str, Any]],
         params: StrategyParams,
-        # tick_size: float,
-        # proximity_threshold: int,
-        # reward_ticks: int,
-        # risk_ticks: int,
-        # tick_tolerance: int,
-        # min_separation: int,
-        # top_n: int,
-        # decay_half_life_days: float,
-        # precision: int,
     ) -> None:
+        if params.kind != "static_bounce":
+            raise ValueError(f"Invalid strategy_params kind: {params.kind}")
+
         # Logs trade signals
         self.logger = logger
 
@@ -70,7 +64,9 @@ class StaticBounce:
         # Last level traded to avoid retests
         self.last_level_traded: float | None = None
 
-    def check(self, tick: Tick, timestamp: Any = None) -> Dict[str, Any] | None:
+    def check(
+        self, tick: Tick, timestamp: Any = None, **kwargs: Any
+    ) -> Dict[str, Any] | None:
         if not self.levels:
             return None
 

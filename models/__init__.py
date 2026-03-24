@@ -4,6 +4,7 @@ from .models import (
     BacktestResult,
     CsvDataSource,
     DataSource,
+    MeanReversionEmaParams,
     ProjectXDataSource,
     StaticBounceParams,
     StaticBounceWithDeltaParams,
@@ -14,6 +15,7 @@ from .models import (
 __all__ = [
     "StaticBounceParams",
     "StaticBounceWithDeltaParams",
+    "MeanReversionEmaParams",
     "StrategyParams",
     "CsvDataSource",
     "ProjectXDataSource",

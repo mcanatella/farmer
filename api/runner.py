@@ -3,13 +3,12 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from aggregators import CsvAggregator
-from calculations import DeltaWindow
 from core import Strategy, run_engine_async
 from models import BacktestConfig, BacktestResult, StrategyConfig
-from strategies import StaticBounce, StaticBounceWithDelta
+from strategies import MeanReversionEma, StaticBounce, StaticBounceWithDelta
 from tickers import CsvTicker
 
-from .handlers import static_bounce_handler
+from .handlers import mean_reversion_ema_handler, static_bounce_handler
 
 
 def _build_strategy(
@@ -19,6 +18,8 @@ def _build_strategy(
         return StaticBounce(logger, candles, config.strategy_params)
     elif config.strategy_params.kind == "static_bounce_with_delta":
         return StaticBounceWithDelta(logger, candles, config.strategy_params)
+    elif config.strategy_params.kind == "mean_reversion_ema":
+        return MeanReversionEma(logger, candles, config.strategy_params)
     else:
         raise ValueError(f"Unsupported strategy kind: {config.strategy_params.kind}")
 
@@ -34,6 +35,9 @@ async def run_backtest_async(
         # the only difference is the strategy logic, not the backtest flow or data requirements.
         # Note that this may not always be the case for future strategies.
         # It's ok to implement a new runner method if needed.
+        return await run_static_bounce_async(config, logger)
+    elif config.strategy.strategy_params.kind == "mean_reversion_ema":
+        # Same runner flow works for now for this strategy
         return await run_static_bounce_async(config, logger)
     else:
         raise ValueError(
@@ -76,9 +80,11 @@ async def run_static_bounce_async(
 
         # Initialize / reset handler state
         state: Dict[str, Any] = {
-            "total_pnl": 0.0,
+            "total_pnl": 0.00,
             "position": None,
             "strategy": strategy,
+            "tick_size": config.strategy.strategy_params.tick_size,
+            "tick_value": config.strategy.strategy_params.tick_value,
         }
 
         trades_file = f"{config.strategy.aggregation_params.data_source.data_dir}/glbx-mdp3-{d:%Y%m%d}.trades.csv"
@@ -88,7 +94,13 @@ async def run_static_bounce_async(
 
         ticker = CsvTicker(trades_file, [aggregator.current_symbol])
 
-        await run_engine_async(ticker, logger, state, static_bounce_handler)
+        handler = (
+            mean_reversion_ema_handler
+            if config.strategy.strategy_params.kind == "mean_reversion_ema"
+            else static_bounce_handler
+        )
+
+        await run_engine_async(ticker, logger, state, handler)
 
         results.append(
             BacktestResult(

@@ -20,4 +20,6 @@ class Aggregator(Protocol):
 
 # Pseudo interface for anything that can implement a trading strategy
 class Strategy(Protocol):
-    def check(self, tick: Tick, timestamp: Any = None) -> Dict[str, Any] | None: ...
+    def check(
+        self, tick: Tick, timestamp: Any = None, **kwargs: Any
+    ) -> Dict[str, Any] | None: ...

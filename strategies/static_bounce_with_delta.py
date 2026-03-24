@@ -184,7 +184,9 @@ class StaticBounceWithDelta:
 
         return True
 
-    def check(self, tick: Tick, timestamp: Any = None) -> Dict[str, Any] | None:
+    def check(
+        self, tick: Tick, timestamp: Any = None, **kwargs: Any
+    ) -> Dict[str, Any] | None:
         now = tick.t
         delta = tick.delta()
 

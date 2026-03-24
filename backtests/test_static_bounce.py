@@ -23,6 +23,7 @@ def run_static_bounce_backtest(
     dates: List[str],
     symbols: List[str],
     tick_size: float = 0.01,
+    tick_value: float = 1.0,
     proximity_threshold: int = 3,
     reward_ticks: int = 20,
     risk_ticks: int = 10,
@@ -57,6 +58,7 @@ def run_static_bounce_backtest(
             ),
             strategy_params=StaticBounceParams(
                 tick_size=tick_size,
+                tick_value=tick_value,
                 proximity_threshold=proximity_threshold,
                 reward_ticks=reward_ticks,
                 risk_ticks=risk_ticks,
@@ -73,7 +75,7 @@ def run_static_bounce_backtest(
 
 
 @pytest.mark.parametrize(
-    "dates,symbols,tick_size,proximity_threshold,reward_ticks,risk_ticks,tick_tolerance,"
+    "dates,symbols,tick_size,tick_value,proximity_threshold,reward_ticks,risk_ticks,tick_tolerance,"
     "min_separation,top_n,decay_half_life_days,lookback_days,precision",
     [
         pytest.param(
@@ -83,6 +85,7 @@ def run_static_bounce_backtest(
             ],
             ["CLZ5", "CLF6"],
             0.01,
+            10.00,
             3,
             20,
             10,
@@ -100,6 +103,7 @@ def test_static_bounce(
     dates: List[str],
     symbols: List[str],
     tick_size: float,
+    tick_value: float,
     proximity_threshold: int,
     reward_ticks: int,
     risk_ticks: int,
@@ -118,6 +122,7 @@ def test_static_bounce(
         dates=dates,
         symbols=symbols,
         tick_size=tick_size,
+        tick_value=tick_value,
         proximity_threshold=proximity_threshold,
         reward_ticks=reward_ticks,
         risk_ticks=risk_ticks,
