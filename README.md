@@ -1,4 +1,4 @@
-# 📈 Level Farmer (Working Name)
+# 📈 Farmer (Working Name)
 
 A modular, event-driven trading framework for developing, testing, and deploying systematic futures trading strategies.
 
