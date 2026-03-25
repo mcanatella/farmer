@@ -1,6 +1,7 @@
 from .models import (
     AggregationParams,
     BacktestConfig,
+    BacktestResponse,
     BacktestResult,
     CsvDataSource,
     DataSource,
@@ -24,4 +25,5 @@ __all__ = [
     "StrategyConfig",
     "BacktestConfig",
     "BacktestResult",
+    "BacktestResponse",
 ]

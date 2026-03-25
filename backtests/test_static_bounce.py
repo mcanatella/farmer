@@ -1,16 +1,16 @@
 import asyncio
 import math
 from pathlib import Path
-from typing import List, Union
+from typing import List
 
 import pytest
-from tabulate import tabulate
 
 from api import run_static_bounce_async
 from config import init_null_logger
 from models import (
     AggregationParams,
     BacktestConfig,
+    BacktestResponse,
     BacktestResult,
     CsvDataSource,
     StaticBounceParams,
@@ -33,9 +33,9 @@ def run_static_bounce_backtest(
     decay_half_life_days: float = 15.0,
     lookback_days: int = 10,
     precision: int = 2,
-) -> List[BacktestResult]:
+) -> BacktestResponse:
     """
-    Sync wrapper so tests can stay non-async.
+    Sync wrapper so unit tests can stay non-async.
     """
     logger = init_null_logger()
 
@@ -117,7 +117,7 @@ def test_static_bounce(
     test_dir = Path(__file__).resolve().parent
     data_dir = test_dir / "testdata"
 
-    results = run_static_bounce_backtest(
+    response = run_static_bounce_backtest(
         data_dir=data_dir,
         dates=dates,
         symbols=symbols,
@@ -135,44 +135,7 @@ def test_static_bounce(
     )
 
     # Basic sanity assertions
-    for r in results:
-        assert isinstance(r, BacktestResult)
-        assert math.isfinite(r.total_pnl)
-
-    rows: List[List[Union[str, float]]] = [
-        [
-            proximity_threshold,
-            reward_ticks,
-            risk_ticks,
-            tick_tolerance,
-            min_separation,
-            top_n,
-            round(r.total_pnl, precision),
-        ]
-        for r in results
-    ]
-
-    rows.append(
-        [
-            "TOTAL",
-            "-",
-            "-",
-            "-",
-            "-",
-            "-",
-            round(sum(r.total_pnl for r in results), precision),
-        ]
-    )
-
-    headers = [
-        "prox_thresh",
-        "reward",
-        "risk",
-        "tick_tol",
-        "min_sep",
-        "top_n",
-        "PnL",
-    ]
-
-    print()
-    print(tabulate(rows, headers=headers, tablefmt="pretty"))
+    assert len(response.results) == len(dates)
+    assert isinstance(response, BacktestResponse)
+    assert isinstance(response.total_pnl, float)
+    assert math.isfinite(response.total_pnl)

@@ -19,9 +19,9 @@ async def main(args) -> None:
     if backtest_conf is None:
         raise ValueError(f"Backtest '{args.name}' not found in configuration")
 
-    result = await run_backtest_async(backtest_conf, logger)
+    response = await run_backtest_async(backtest_conf, logger)
 
-    print(json.dumps([r.model_dump() for r in result], indent=2))
+    print(json.dumps(response.model_dump(), indent=2))
 
 
 if __name__ == "__main__":

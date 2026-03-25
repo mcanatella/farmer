@@ -99,5 +99,11 @@ class BacktestConfig(BaseModel):
 
 
 class BacktestResult(BaseModel):
-    total_pnl: float
+    pnl: float
     trades_file: str
+
+
+class BacktestResponse(BaseModel):
+    backtest_name: str
+    total_pnl: float
+    results: List[BacktestResult]

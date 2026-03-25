@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from aggregators import CsvAggregator
 from core import Strategy, run_engine_async
-from models import BacktestConfig, BacktestResult, StrategyConfig
+from models import BacktestConfig, BacktestResponse, BacktestResult, StrategyConfig
 from strategies import MeanReversionEma, StaticBounce, StaticBounceWithDelta
 from tickers import CsvTicker
 
@@ -27,7 +27,7 @@ def _build_strategy(
 async def run_backtest_async(
     config: BacktestConfig,
     logger: Optional[logging.Logger] = None,
-) -> List[BacktestResult]:
+) -> BacktestResponse:
     if config.strategy.strategy_params.kind == "static_bounce":
         return await run_static_bounce_async(config, logger)
     elif config.strategy.strategy_params.kind == "static_bounce_with_delta":
@@ -48,7 +48,7 @@ async def run_backtest_async(
 async def run_static_bounce_async(
     config: BacktestConfig,
     logger: Optional[logging.Logger] = None,
-) -> List[BacktestResult]:
+) -> BacktestResponse:
     results: List[BacktestResult] = []
     if logger is None:
         logger = logging.getLogger("static_bounce_backtest_runner")
@@ -104,9 +104,13 @@ async def run_static_bounce_async(
 
         results.append(
             BacktestResult(
-                total_pnl=state["total_pnl"],
+                pnl=state["total_pnl"],
                 trades_file=trades_file,
             )
         )
 
-    return results
+    return BacktestResponse(
+        backtest_name=config.name,
+        total_pnl=sum(r.pnl for r in results),
+        results=results,
+    )
