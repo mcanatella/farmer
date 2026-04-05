@@ -1,7 +1,8 @@
 import argparse
 
-from backtest.helpers import build_aggregator, build_strategy
+from aggregators import build_aggregator
 from config import DiscoverSettings, init_backtest_logger
+from strategies import build_strategy
 
 
 def main(args) -> None:

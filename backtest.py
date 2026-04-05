@@ -22,6 +22,8 @@ async def main(args) -> None:
 
     response = await run_backtest_async(backtest_conf, logger)
 
+    # Print serialized response to stdout for consumption by caller.
+    # Note this same response can be used in upcoming api implementation.
     print(json.dumps(response.model_dump(), indent=2))
 
 

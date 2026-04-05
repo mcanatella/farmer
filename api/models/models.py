@@ -46,13 +46,15 @@ class MeanReversionEmaParams(BaseModel):
     kind: Literal["mean_reversion_ema"] = "mean_reversion_ema"
     precision: int = 2
     ema_period: int = 20  # EMA lookback in candles
+    atr_period: int = 14  # ATR lookback in candles (14 is the standard)
     candle_length: int = 5  # minutes per candle (must match aggregation_params)
     reward_ticks: int = 0  # only used when target_ema is False
     target_ema: bool = True  # TP at the EMA level itself
+    cooldown_seconds: int = 300  # seconds between trades
     max_distance_ticks: Optional[int] = (
         None  # skip entries if price is too far (knife-catcher guard)
     )
-    cooldown_seconds: int = 300  # seconds between trades
+    max_atr: Optional[float] = None  # skip entries when ATR exceeds this value
 
 
 StrategyParams = Union[
@@ -72,6 +74,7 @@ class CsvDataSource(BaseModel):
 class ProjectXDataSource(BaseModel):
     kind: Literal["projectx"] = "projectx"
     base_url: str
+    market_hub_base_url: str
     username: str
     api_key: str
     contract_id: str

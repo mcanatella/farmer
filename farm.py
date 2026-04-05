@@ -1,7 +1,7 @@
 import argparse
 
-from backtest import build_aggregator, build_strategy
 from config import FarmSettings, init_strucutred_logger
+from farm import Farmer
 
 
 def main(args):
@@ -18,11 +18,11 @@ def main(args):
     if strategy_conf is None:
         raise ValueError(f"Strategy '{args.strategy}' not found in configuration")
 
-    aggregator = build_aggregator(strategy_conf, logger)
+    farmer = Farmer(strategy_conf, logger)
+    print(farmer.market_hub)
 
-    strategy = build_strategy(strategy_conf, logger, aggregator.get_candles())
+    farmer.start()
 
-    print(strategy)
 
 
 if __name__ == "__main__":

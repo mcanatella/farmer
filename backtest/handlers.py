@@ -69,11 +69,12 @@ def mean_reversion_ema_handler(
 ) -> None:
     strategy = state["strategy"]
 
-    # Handler owns the EMA update
+    # Handler owns the EMA and ATR updates
     strategy.ema.on_tick(tick)
+    strategy.atr.on_tick(tick)
 
     if state["position"] is None:
-        state["position"] = strategy.check(tick, tick.t, ema=strategy.ema.value)
+        state["position"] = strategy.check(tick, tick.t, ema=strategy.ema.value, atr=strategy.atr.value)
         return
 
     tick_size = state["tick_size"]

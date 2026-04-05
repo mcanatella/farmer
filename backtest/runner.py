@@ -5,10 +5,10 @@ from typing import Any, Dict, List, Optional
 from aggregators import CsvAggregator
 from api.models import BacktestConfig, BacktestResponse, BacktestResult
 from core import run_engine_async
+from strategies import build_strategy
 from tickers import CsvTicker
 
 from .handlers import mean_reversion_ema_handler, static_bounce_handler
-from .helpers import build_strategy
 
 
 async def run_backtest_async(
@@ -32,6 +32,7 @@ async def run_backtest_async(
         )
 
 
+# TODO: encapsulate this in a Backtest class
 async def run_static_bounce_async(
     config: BacktestConfig,
     logger: Optional[logging.Logger] = None,
