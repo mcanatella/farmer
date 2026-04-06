@@ -1,6 +1,6 @@
 from .backtest import BacktestSettings
-from .bot import BotSettings
 from .discover import DiscoverSettings
+from .farm import FarmSettings
 from .logging import (
     init_backtest_logger,
     init_null_logger,
@@ -10,7 +10,7 @@ from .logging import (
 
 __all__ = [
     "BacktestSettings",
-    "BotSettings",
+    "FarmSettings",
     "DiscoverSettings",
     "init_backtest_logger",
     "init_strucutred_logger",

@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import json
 
-from api import run_backtest_async
+from backtest import run_backtest_async
 from config import BacktestSettings, init_backtest_logger
 
 
@@ -11,6 +11,7 @@ async def main(args) -> None:
 
     logger = init_backtest_logger()
 
+    # Look up the specified backtest in settings and raise an error if not present
     backtest_conf = None
     for bt in settings.backtests:
         if bt.name == args.name:
@@ -21,6 +22,8 @@ async def main(args) -> None:
 
     response = await run_backtest_async(backtest_conf, logger)
 
+    # Print serialized response to stdout for consumption by caller.
+    # Note this same response can be used in upcoming api implementation.
     print(json.dumps(response.model_dump(), indent=2))
 
 

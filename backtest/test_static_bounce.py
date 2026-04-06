@@ -5,17 +5,17 @@ from typing import List
 
 import pytest
 
-from api import run_static_bounce_async
-from config import init_null_logger
-from models import (
+from api.models import (
     AggregationParams,
     BacktestConfig,
     BacktestResponse,
-    BacktestResult,
     CsvDataSource,
     StaticBounceParams,
     StrategyConfig,
 )
+from config import init_null_logger
+
+from . import run_static_bounce_async
 
 
 def run_static_bounce_backtest(

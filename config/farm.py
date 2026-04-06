@@ -3,20 +3,20 @@ from typing import List
 import yaml
 from pydantic import BaseModel
 
-from api.models import BacktestConfig
+from api.models import StrategyConfig
 
 
-class BacktestSettings(BaseModel):
-    backtests: List[BacktestConfig]
+class FarmSettings(BaseModel):
+    strategies: List[StrategyConfig]
 
     @classmethod
-    def build(cls, args) -> "BacktestSettings":
+    def build(cls, args) -> "FarmSettings":
         with open(args.config, "r") as f:
             raw = yaml.safe_load(f) or {}
 
-        data = raw.get("backtests", [])
+        data = raw.get("farm", {})
 
-        return cls(backtests=data)
+        return cls(**data)
 
     @classmethod
     def set_args(cls, parser):
@@ -24,4 +24,6 @@ class BacktestSettings(BaseModel):
             "--config", type=str, default="config.yaml", help="Config file path"
         )
 
-        parser.add_argument("--name", type=str, help="The name of the backtest to run")
+        parser.add_argument(
+            "--strategy", type=str, help="The strategy name to run in production"
+        )

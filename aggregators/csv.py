@@ -4,8 +4,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
+from api.models import AggregationParams
 from core import Tick, run_engine
-from models import AggregationParams
 from tickers import CsvTicker
 
 FNAME_PREFIX = "glbx-mdp3-"

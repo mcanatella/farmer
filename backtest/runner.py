@@ -3,25 +3,12 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from aggregators import CsvAggregator
-from core import Strategy, run_engine_async
-from models import BacktestConfig, BacktestResponse, BacktestResult, StrategyConfig
-from strategies import MeanReversionEma, StaticBounce, StaticBounceWithDelta
+from api.models import BacktestConfig, BacktestResponse, BacktestResult
+from core import run_engine_async
+from strategies import build_strategy
 from tickers import CsvTicker
 
 from .handlers import mean_reversion_ema_handler, static_bounce_handler
-
-
-def _build_strategy(
-    config: StrategyConfig, logger: logging.Logger, candles: List[Dict[str, Any]]
-) -> Strategy:
-    if config.strategy_params.kind == "static_bounce":
-        return StaticBounce(logger, candles, config.strategy_params)
-    elif config.strategy_params.kind == "static_bounce_with_delta":
-        return StaticBounceWithDelta(logger, candles, config.strategy_params)
-    elif config.strategy_params.kind == "mean_reversion_ema":
-        return MeanReversionEma(logger, candles, config.strategy_params)
-    else:
-        raise ValueError(f"Unsupported strategy kind: {config.strategy_params.kind}")
 
 
 async def run_backtest_async(
@@ -45,6 +32,7 @@ async def run_backtest_async(
         )
 
 
+# TODO: encapsulate this in a Backtest class
 async def run_static_bounce_async(
     config: BacktestConfig,
     logger: Optional[logging.Logger] = None,
@@ -53,7 +41,7 @@ async def run_static_bounce_async(
     if logger is None:
         logger = logging.getLogger("static_bounce_backtest_runner")
 
-    for bt_date in config.dates:
+    for bt_date in config.get_dates():
         d = datetime.strptime(bt_date, "%Y%m%d").date()
 
         logger.info(f"Running backtest {config.name} for date: {d}")
@@ -76,7 +64,7 @@ async def run_static_bounce_async(
         candles = aggregator.get_candles()
 
         # Initialize / reset requested strategy
-        strategy = _build_strategy(config.strategy, logger, candles)
+        strategy = build_strategy(config.strategy, logger, candles)
 
         # Initialize / reset handler state
         state: Dict[str, Any] = {

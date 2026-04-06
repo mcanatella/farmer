@@ -5,9 +5,9 @@ from typing import Any, Dict, List
 
 from tabulate import tabulate
 
+from api.models import StrategyParams
 from calculations import DeltaEvent, DeltaWindow, calculate_static_levels
 from core import Tick
-from models import StrategyParams
 
 
 @dataclass

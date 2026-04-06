@@ -3,7 +3,7 @@ from typing import List
 import yaml
 from pydantic import BaseModel
 
-from models import StrategyConfig
+from api.models import StrategyConfig
 
 
 class DiscoverSettings(BaseModel):
