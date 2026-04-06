@@ -1,9 +1,11 @@
 import logging
 import time as t
+from typing import cast
 
 from signalrcore.hub_connection_builder import HubConnectionBuilder
 
 from aggregators import build_aggregator
+from aggregators.projectx import ProjectXAggregator
 from api.models import StrategyConfig
 from strategies import build_strategy
 
@@ -18,11 +20,16 @@ class Farmer:
         self.strategy_conf = strategy_conf
         self.logger = logger
 
-        self.aggregator = build_aggregator(strategy_conf, self.logger)
-        self.strategy = build_strategy(self.strategy_conf, self.logger, self.aggregator.get_candles())
+        self.aggregator = cast(
+            ProjectXAggregator, build_aggregator(strategy_conf, self.logger)
+        )
 
         # Aggregator should handle authentication on initialization and provide the jwt token
         self.jwt_token = self.aggregator.jwt_token
+
+        self.strategy = build_strategy(
+            self.strategy_conf, self.logger, self.aggregator.get_candles()
+        )
 
         self.market_hub = (
             HubConnectionBuilder()
@@ -61,7 +68,10 @@ class Farmer:
             self.logger.info(
                 "user stopped market hub", extra={"event": "market_hub_stop"}
             )
-            self.market_hub.send("UnsubscribeContractQuotes", [self.strategy_conf.aggregation_params.data_source.contract_id])
+            self.market_hub.send(
+                "UnsubscribeContractQuotes",
+                [self.strategy_conf.aggregation_params.data_source.contract_id],
+            )
             self.market_hub.stop()
 
     def on_open(self):
@@ -71,7 +81,10 @@ class Farmer:
         )
 
         # Subscribe to the configured futures contract
-        self.market_hub.send("SubscribeContractQuotes", [self.strategy_conf.aggregation_params.data_source.contract_id])
+        self.market_hub.send(
+            "SubscribeContractQuotes",
+            [self.strategy_conf.aggregation_params.data_source.contract_id],
+        )
 
         self.logger.info(
             f"subscribed to contract {self.strategy_conf.aggregation_params.data_source.contract_id}",

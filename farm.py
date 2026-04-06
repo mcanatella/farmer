@@ -19,10 +19,8 @@ def main(args):
         raise ValueError(f"Strategy '{args.strategy}' not found in configuration")
 
     farmer = Farmer(strategy_conf, logger)
-    print(farmer.market_hub)
 
     farmer.start()
-
 
 
 if __name__ == "__main__":

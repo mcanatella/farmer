@@ -1,10 +1,11 @@
 import logging
+from datetime import datetime, timedelta
 
 from api.models import StrategyConfig
+from core import Aggregator
+
 from .csv import CsvAggregator
 from .projectx import ProjectXAggregator
-from core import Aggregator
-from datetime import datetime, timedelta
 
 
 def build_aggregator(

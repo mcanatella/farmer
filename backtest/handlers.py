@@ -74,7 +74,9 @@ def mean_reversion_ema_handler(
     strategy.atr.on_tick(tick)
 
     if state["position"] is None:
-        state["position"] = strategy.check(tick, tick.t, ema=strategy.ema.value, atr=strategy.atr.value)
+        state["position"] = strategy.check(
+            tick, tick.t, ema=strategy.ema.value, atr=strategy.atr.value
+        )
         return
 
     tick_size = state["tick_size"]

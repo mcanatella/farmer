@@ -13,7 +13,7 @@ class ProjectXAggregator:
             raise ValueError(
                 f"Invalid data source for ProjectXAggregator: {params.data_source.kind}"
             )
-        
+
         if params.unit != "minutes":
             raise ValueError(f"Unsupported unit: {params.unit}")
 
@@ -25,7 +25,9 @@ class ProjectXAggregator:
             api_key=params.data_source.api_key,
         ).login()
 
-        self.market_data_client = MarketData(params.data_source.base_url, self.jwt_token)
+        self.market_data_client = MarketData(
+            params.data_source.base_url, self.jwt_token
+        )
 
         self.contract_id = params.data_source.contract_id
         self.days = params.lookback_days
