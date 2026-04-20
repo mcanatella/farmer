@@ -1,5 +1,6 @@
 import logging
 import time as t
+from datetime import datetime
 from typing import cast
 
 from signalrcore.hub_connection_builder import HubConnectionBuilder
@@ -7,6 +8,7 @@ from signalrcore.hub_connection_builder import HubConnectionBuilder
 from aggregators import build_aggregator
 from aggregators.projectx import ProjectXAggregator
 from api.models import StrategyConfig
+from core import Tick
 from strategies import build_strategy
 
 
@@ -57,7 +59,10 @@ class Farmer:
         self.market_hub.on_open(self.on_open)
         self.market_hub.on_close(self.on_close)
         self.market_hub.on_error(self.on_error)
-        self.market_hub.on("GatewayQuote", self.on_quote)
+        # self.market_hub.on("GatewayQuote", self.on_quote)
+        self.market_hub.on("GatewayTrade", self.on_trade)
+
+        self.in_position = False
 
     def start(self):
         self.market_hub.start()
@@ -69,7 +74,7 @@ class Farmer:
                 "user stopped market hub", extra={"event": "market_hub_stop"}
             )
             self.market_hub.send(
-                "UnsubscribeContractQuotes",
+                "UnsubscribeContractTrades",
                 [self.strategy_conf.aggregation_params.data_source.contract_id],
             )
             self.market_hub.stop()
@@ -82,7 +87,7 @@ class Farmer:
 
         # Subscribe to the configured futures contract
         self.market_hub.send(
-            "SubscribeContractQuotes",
+            "SubscribeContractTrades",
             [self.strategy_conf.aggregation_params.data_source.contract_id],
         )
 
@@ -97,11 +102,55 @@ class Farmer:
             extra={"event": "market_hub_disconnect"},
         )
 
-    def on_quote(self, args):
-        self.logger.info(
-            "received market quote",
-            extra={"event": "market_hub_quote", "value": args},
+    # def on_quote(self, args):
+    #     self.logger.info(
+    #         "received market quote",
+    #         extra={"event": "market_hub_quote", "value": args},
+    #     )
+
+    def on_trade(self, args):
+        self.logger.debug(
+            "received market trade",
+            extra={"event": "market_hub_trade", "value": args},
         )
+
+        contract_id, trades = args
+        for t in trades:
+            if t["type"] > 1:
+                continue  # Ignore non-standard trades for now
+
+            tick = Tick(
+                t=datetime.fromisoformat(t["timestamp"].replace("Z", "+00:00")),
+                price=t["price"],
+                size=t["volume"],
+                side="B" if t["type"] == 0 else "A",
+                symbol=t["symbolId"],
+            )
+
+            # print(tick)
+
+            # TODO: feed tick to live engine
+
+            self.strategy.ema.on_tick(tick)
+            self.strategy.atr.on_tick(tick)
+
+            # Simple test and will run overnight
+            position = self.strategy.check(
+                tick, ema=self.strategy.ema.value, atr=self.strategy.atr.value
+            )
+            if position is not None and not self.in_position:
+                self.in_position = True
+                self.logger.info(
+                    f"Generated signal: {position}",
+                    extra={"event": "strategy_signal", "value": position},
+                )
+            else:
+                if self.in_position:
+                    self.logger.info(
+                        "Clearing position", extra={"event": "position_clear"}
+                    )
+
+                self.in_position = False
 
     def on_error(self, error):
         self.logger.error(

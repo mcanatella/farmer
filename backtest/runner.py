@@ -8,7 +8,7 @@ from core import run_engine_async
 from strategies import build_strategy
 from tickers import CsvTicker
 
-from .handlers import mean_reversion_ema_handler, static_bounce_handler
+from .handlers import mean_reversion_ema_handler, static_bounce_handler, vwap_mean_reversion_handler
 
 
 async def run_backtest_async(
@@ -24,6 +24,9 @@ async def run_backtest_async(
         # It's ok to implement a new runner method if needed.
         return await run_static_bounce_async(config, logger)
     elif config.strategy.strategy_params.kind == "mean_reversion_ema":
+        # Same runner flow works for now for this strategy
+        return await run_static_bounce_async(config, logger)
+    elif config.strategy.strategy_params.kind == "vwap_mean_reversion":
         # Same runner flow works for now for this strategy
         return await run_static_bounce_async(config, logger)
     else:
@@ -82,11 +85,17 @@ async def run_static_bounce_async(
 
         ticker = CsvTicker(trades_file, [aggregator.current_symbol])
 
-        handler = (
-            mean_reversion_ema_handler
-            if config.strategy.strategy_params.kind == "mean_reversion_ema"
-            else static_bounce_handler
-        )
+        # handler = (
+        #     mean_reversion_ema_handler
+        #     if config.strategy.strategy_params.kind == "mean_reversion_ema"
+        #     else static_bounce_handler
+        # )
+
+        handler = static_bounce_handler
+        if config.strategy.strategy_params.kind == "mean_reversion_ema":
+            handler = mean_reversion_ema_handler
+        elif config.strategy.strategy_params.kind == "vwap_mean_reversion":
+            handler = vwap_mean_reversion_handler
 
         await run_engine_async(ticker, logger, state, handler)
 

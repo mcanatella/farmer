@@ -57,8 +57,42 @@ class MeanReversionEmaParams(BaseModel):
     max_atr: Optional[float] = None  # skip entries when ATR exceeds this value
 
 
+class VwapMeanReversionParams(BaseModel):
+    tick_size: float
+    tick_value: float
+    kind: Literal["vwap_mean_reversion"] = "vwap_mean_reversion"
+    precision: int = 2
+ 
+    # Session reset (local time)
+    session_reset_hour: int = 17  # 5pm CT = Globex open; use 8 for RTH (and minute=30)
+    session_reset_minute: int = 0
+ 
+    # Entry thresholds (in standard deviations from VWAP)
+    entry_std_dev: float = 2.0  # price must be >= this many std devs away
+    max_std_dev: float = 4.0  # falling-knife guard; skip entries beyond this
+ 
+    # Risk management
+    risk_ticks: int = 40  # stop loss in ticks (MES: 40 ticks = 10 points = $50)
+ 
+    # Don't trade until VWAP has stabilized
+    min_session_volume: int = 1000
+
+    # Minimum std dev (in price) before trading is allowed
+    min_std_dev: Optional[float] = None
+ 
+    # Delta confirmation (ZoneAttempt pattern)
+    use_delta_confirmation: bool = True
+    attempt_seconds: int = 30
+    delta_ratio_threshold: float = 0.15
+    min_response_ticks: int = 2
+    cooldown_seconds: int = 300
+
+    # Minimum std dev (in price) before trading is allowed
+    min_std_dev: Optional[float] = None
+
+
 StrategyParams = Union[
-    StaticBounceParams, StaticBounceWithDeltaParams, MeanReversionEmaParams
+    StaticBounceParams, StaticBounceWithDeltaParams, MeanReversionEmaParams, VwapMeanReversionParams
 ]
 
 
