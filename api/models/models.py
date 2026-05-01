@@ -57,18 +57,38 @@ class MeanReversionEmaParams(BaseModel):
     max_atr: Optional[float] = None  # skip entries when ATR exceeds this value
 
 
+class VwapMeanReversionParams(BaseModel):
+    tick_size: float
+    tick_value: float
+    kind: Literal["vwap_mean_reversion"] = "vwap_mean_reversion"
+    precision: int = 2
+    session_reset_hour: int = 17
+    session_reset_minute: int = 0
+    entry_std_dev: float = 2.0
+    max_std_dev: float = 4.0
+    min_std_dev: Optional[float] = None
+    risk_ticks: int = 40
+    min_session_volume: int = 1000
+    attempt_seconds: int = 30
+    delta_ratio_threshold: float = 0.15
+    min_response_ticks: int = 2
+    cooldown_seconds: int = 300
+    min_attempt_volume: int = 0
+    min_absorbed_volume: int = 0
+    absorption_ticks: int = 2
+
+
 StrategyParams = Union[
-    StaticBounceParams, StaticBounceWithDeltaParams, MeanReversionEmaParams
+    StaticBounceParams,
+    StaticBounceWithDeltaParams,
+    MeanReversionEmaParams,
+    VwapMeanReversionParams,
 ]
 
 
 class CsvDataSource(BaseModel):
     kind: Literal["csv"] = "csv"
     data_dir: str
-    symbols: List[str]
-    pct_margin: float
-    abs_margin: int
-    min_total_volume: int
 
 
 class ProjectXDataSource(BaseModel):
@@ -83,17 +103,34 @@ class ProjectXDataSource(BaseModel):
 DataSource = Union[CsvDataSource, ProjectXDataSource]
 
 
-class AggregationParams(BaseModel):
-    lookback_days: int
+class TickerParams(BaseModel):
     data_source: DataSource
+    symbols: List[str]
+    start_symbol: str
+    pct_margin: float
+    abs_margin: int
+    min_total_volume: int
+    throttle: float = 0.0
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+
+
+class AggregationParams(BaseModel):
+    data_source: DataSource
+    lookback_days: int
     candle_length: int = 5
     unit: str = "minutes"
 
 
 class StrategyConfig(BaseModel):
-    name: str
-    aggregation_params: AggregationParams
+    ticker_params: Optional[TickerParams] = None
+    aggregation_params: Optional[AggregationParams] = None
     strategy_params: StrategyParams
+
+
+class QueryConfig(BaseModel):
+    name: str
+    strategy: StrategyConfig
 
 
 class BacktestConfig(BaseModel):
@@ -115,7 +152,9 @@ class BacktestConfig(BaseModel):
             result = []
             d = start
             while d <= end:
-                if d.weekday() != 5:  # Skip Saturdays
+                if (
+                    d.weekday() != 5
+                ):  # Skip Saturdays because futures markets are closed
                     result.append(d.strftime("%Y%m%d"))
                 d += timedelta(days=1)
         else:

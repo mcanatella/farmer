@@ -12,12 +12,12 @@ def main(args) -> None:
 
     # Look up the specified strategy in settings and raise an error if not present
     strategy_conf = None
-    for s in settings.strategies:
-        if s.name == args.strategy:
-            strategy_conf = s
+    for q in settings.queries:
+        if q.name == args.query:
+            strategy_conf = q.strategy
             break
     if strategy_conf is None:
-        raise ValueError(f"Strategy '{args.strategy}' not found in configuration")
+        raise ValueError(f"Query '{args.query}' not found in configuration")
 
     aggregator = build_aggregator(strategy_conf, logger)
     strategy = build_strategy(strategy_conf, logger, aggregator.get_candles())

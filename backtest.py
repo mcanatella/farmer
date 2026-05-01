@@ -29,7 +29,7 @@ async def main(args) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Quant trading backtest runner for modular strategies",
+        description="Backtest runner for modular quant trading strategies",
     )
     BacktestSettings.set_args(parser)
     args = parser.parse_args()

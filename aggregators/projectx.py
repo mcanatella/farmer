@@ -40,7 +40,8 @@ class ProjectXAggregator:
     def get_candles(self) -> List[Dict[str, Any]]:
         self._poll()
 
-        return self.candles
+        # We want candles in ascending order (oldest first) for moving average calculations
+        return list(reversed(self.candles))
 
     def _poll(self) -> None:
         num_candles = math.ceil(60 / self.candle_length) * 24 * self.days
@@ -52,7 +53,7 @@ class ProjectXAggregator:
             contractId=self.contract_id,
             live=False,
             startTime=start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            endtime=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            endTime=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
             unit=self.unit,
             unitNumber=self.candle_length,
             limit=num_candles,

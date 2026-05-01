@@ -12,10 +12,11 @@ from api.models import (
     CsvDataSource,
     StaticBounceParams,
     StrategyConfig,
+    TickerParams,
 )
 from config import init_null_logger
 
-from . import run_static_bounce_async
+from . import run_backtest_async
 
 
 def run_static_bounce_backtest(
@@ -39,20 +40,23 @@ def run_static_bounce_backtest(
     """
     logger = init_null_logger()
 
+    data_source = CsvDataSource(kind="csv", data_dir=str(data_dir))
+
     config = BacktestConfig(
         name="static_bounce_backtest",
         dates=dates,
         strategy=StrategyConfig(
-            name="static_bounce_strategy",
+            ticker_params=TickerParams(
+                data_source=data_source,
+                symbols=symbols,
+                start_symbol=symbols[0],
+                pct_margin=0.10,
+                abs_margin=200,
+                min_total_volume=1000,
+            ),
             aggregation_params=AggregationParams(
+                data_source=data_source,
                 lookback_days=lookback_days,
-                data_source=CsvDataSource(
-                    data_dir=str(data_dir),
-                    symbols=symbols,
-                    pct_margin=0.10,
-                    abs_margin=200,
-                    min_total_volume=1000,
-                ),
                 candle_length=5,
                 unit="minutes",
             ),
@@ -71,7 +75,7 @@ def run_static_bounce_backtest(
         ),
     )
 
-    return asyncio.run(run_static_bounce_async(config, logger))
+    return asyncio.run(run_backtest_async(config, logger))
 
 
 @pytest.mark.parametrize(
