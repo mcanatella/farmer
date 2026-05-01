@@ -1,6 +1,5 @@
 from .models import (
     AggregationParams,
-    TickerParams,
     BacktestConfig,
     BacktestResponse,
     BacktestResult,
@@ -8,11 +7,12 @@ from .models import (
     DataSource,
     MeanReversionEmaParams,
     ProjectXDataSource,
+    QueryConfig,
     StaticBounceParams,
     StaticBounceWithDeltaParams,
-    QueryConfig,
     StrategyConfig,
     StrategyParams,
+    TickerParams,
     VwapMeanReversionParams,
 )
 

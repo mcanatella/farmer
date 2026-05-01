@@ -2,7 +2,7 @@ import logging
 import re
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List
 
 from api.models import AggregationParams, TickerParams
 from core import Tick, run_engine
@@ -59,6 +59,7 @@ class CsvAggregator:
     Aggregator that streams trade ticks from one or more CSV files via CsvTicker and builds OHLCV candles in-memory.
     The bucket timestamp is the floor of the tick time to the nearest candle length.
     """
+
     def __init__(
         self,
         logger: logging.Logger,
@@ -77,23 +78,21 @@ class CsvAggregator:
         self.ticker_params = ticker_params
         self.start_date = start_date
         self.end_date = end_date
-        
+
         self.data_dir = Path(ticker_params.data_source.data_dir)
         self.candles: List[Dict[str, Any]] = []
-
 
     def get_candles(self) -> List[Dict[str, Any]]:
         self._poll()
 
         return self.candles
 
-
     def _poll(self) -> None:
         # OHLCV state accumulator keyed by (bucket_ts, symbol)
         buckets: Dict[tuple[datetime, str], Dict[str, float]] = {}
 
         # Collect matching files by filename date
-        dates: List[datetime] = []
+        dates: List[date] = []
         for path in sorted(self.data_dir.glob("glbx-mdp3-*.trades.csv")):
             m = FNAME_RE.search(path.name)
             if not m:
@@ -101,7 +100,7 @@ class CsvAggregator:
             d = _parse_yyyymmdd(m.group(1))
             if self.start_date <= d <= self.end_date:
                 dates.append(d)
-        
+
         state: Dict[str, Any] = {
             "buckets": buckets,
             "candle_length": self.params.candle_length,
@@ -113,13 +112,13 @@ class CsvAggregator:
 
             # Carry forward the leader contract to the next file
             self.ticker_params.start_symbol = ticker.current_symbol
-        
+
         if not buckets:
             raise RuntimeError(
                 f"No candles produced. current_symbol={ticker.current_symbol} "
                 f"symbols={self.ticker_params.symbols} vols={ticker.symbol_volumes}"
             )
-        
+
         # Flatten to list of dicts, sorted by time then symbol
         out: List[Dict[str, Any]] = []
         for (bkt_ts, sym), rec in sorted(

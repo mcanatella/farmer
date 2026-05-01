@@ -34,13 +34,19 @@ class CsvTicker:
         params: TickerParams,
         trade_date: str,
     ) -> None:
+        if params.data_source.kind != "csv":
+            raise ValueError(
+                f"Invalid data_source for CsvTicker: {params.data_source.kind}"
+            )
+
         self.logger = logger
         self.params = params
 
-        self.trade_path = Path(f"{params.data_source.data_dir}/glbx-mdp3-{trade_date}.trades.csv")
+        self.trade_path = Path(
+            f"{params.data_source.data_dir}/glbx-mdp3-{trade_date}.trades.csv"
+        )
         self.current_symbol: str = params.start_symbol
         self.symbol_volumes: Dict[str, int] = {symbol: 0 for symbol in params.symbols}
-
 
     def _rows(self) -> Iterable[Tick]:
         with self.trade_path.open("r", newline="") as f:
@@ -75,20 +81,27 @@ class CsvTicker:
                     self.symbol_volumes[row[symbol_i]] += int(row[size_i])
 
                     # Switch to the new leader when we have enough confidence it's the new active contract
-                    leader = max(self.symbol_volumes, key=self.symbol_volumes.get)
+                    leader = max(
+                        self.symbol_volumes, key=lambda s: self.symbol_volumes[s]
+                    )
                     if leader != self.current_symbol:
                         total = sum(self.symbol_volumes.values())
-                        lead = self.symbol_volumes[leader] - self.symbol_volumes[self.current_symbol]
+                        lead = (
+                            self.symbol_volumes[leader]
+                            - self.symbol_volumes[self.current_symbol]
+                        )
 
                         if total >= self.params.min_total_volume and (
                             lead >= self.params.abs_margin
-                            or self.symbol_volumes[leader] >= self.symbol_volumes[self.current_symbol] * (1 + self.params.pct_margin)
+                            or self.symbol_volumes[leader]
+                            >= self.symbol_volumes[self.current_symbol]
+                            * (1 + self.params.pct_margin)
                         ):
                             self.logger.info(
                                 f"Switching from {self.current_symbol} to {leader} at {t.isoformat()} with volumes: {self.symbol_volumes}"
                             )
                             self.current_symbol = leader
-                    
+
                     if row[symbol_i] != self.current_symbol:
                         continue
 

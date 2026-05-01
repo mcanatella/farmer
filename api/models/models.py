@@ -132,6 +132,7 @@ class QueryConfig(BaseModel):
     name: str
     strategy: StrategyConfig
 
+
 class BacktestConfig(BaseModel):
     name: str
     dates: Optional[List[str]] = None
@@ -151,7 +152,9 @@ class BacktestConfig(BaseModel):
             result = []
             d = start
             while d <= end:
-                if d.weekday() != 5:  # Skip Saturdays because futures markets are closed
+                if (
+                    d.weekday() != 5
+                ):  # Skip Saturdays because futures markets are closed
                     result.append(d.strftime("%Y%m%d"))
                 d += timedelta(days=1)
         else:
