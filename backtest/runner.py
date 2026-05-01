@@ -39,7 +39,9 @@ async def _run_backtest_async_without_seeding(
 ) -> BacktestResponse:
     results: List[BacktestResult] = []
     if config.strategy.ticker_params is None:
-        raise ValueError("Ticker parameters are required for backtesting")
+        raise ValueError(
+            "Ticker parameters are required for backtesting without seeding"
+        )
 
     if logger is None:
         logger = logging.getLogger("backtest_async_without_seeding")
