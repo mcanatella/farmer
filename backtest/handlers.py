@@ -142,7 +142,8 @@ def vwap_mean_reversion_handler(
 
     if state["position"] is None:
         state["position"] = strategy.check(
-            tick, tick.t,
+            tick,
+            tick.t,
             vwap=vwap_now,
             std_dev=strategy.vwap.std_dev,
             session_volume=strategy.vwap.session_volume,

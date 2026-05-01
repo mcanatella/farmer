@@ -1,17 +1,19 @@
 from .models import (
     AggregationParams,
+    TickerParams,
     BacktestConfig,
     BacktestResponse,
     BacktestResult,
     CsvDataSource,
     DataSource,
     MeanReversionEmaParams,
-    VwapMeanReversionParams,
     ProjectXDataSource,
     StaticBounceParams,
     StaticBounceWithDeltaParams,
+    QueryConfig,
     StrategyConfig,
     StrategyParams,
+    VwapMeanReversionParams,
 )
 
 __all__ = [
@@ -24,8 +26,10 @@ __all__ = [
     "ProjectXDataSource",
     "DataSource",
     "AggregationParams",
+    "TickerParams",
     "StrategyConfig",
     "BacktestConfig",
+    "QueryConfig",
     "BacktestResult",
     "BacktestResponse",
 ]

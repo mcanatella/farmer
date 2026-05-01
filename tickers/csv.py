@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import logging
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import AsyncIterator, Iterable, Iterator, List, Optional
+from typing import AsyncIterator, Dict, Iterable, Iterator
 
+from api.models import TickerParams
 from core import Tick
 
 
@@ -28,20 +30,20 @@ class CsvTicker:
 
     def __init__(
         self,
-        csv_path: str | Path,
-        want_symbols: List[str],
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        throttle: float = 0.0,
-    ):
-        self.csv_path = Path(csv_path)
-        self.want_symbols = want_symbols
-        self.start_time = start_time
-        self.end_time = end_time
-        self.throttle = throttle
+        logger: logging.Logger,
+        params: TickerParams,
+        trade_date: str,
+    ) -> None:
+        self.logger = logger
+        self.params = params
+
+        self.trade_path = Path(f"{params.data_source.data_dir}/glbx-mdp3-{trade_date}.trades.csv")
+        self.current_symbol: str = params.start_symbol
+        self.symbol_volumes: Dict[str, int] = {symbol: 0 for symbol in params.symbols}
+
 
     def _rows(self) -> Iterable[Tick]:
-        with self.csv_path.open("r", newline="") as f:
+        with self.trade_path.open("r", newline="") as f:
             r = csv.reader(f)
             header = next(r)
             idx = {name: i for i, name in enumerate(header)}
@@ -59,13 +61,35 @@ class CsvTicker:
                         continue
 
                     # Ignore irrelevant symbols
-                    if row[symbol_i] not in self.want_symbols:
+                    if row[symbol_i] not in self.params.symbols:
                         continue
 
+                    # Filter by time if requested
                     t = _parse_ts_event(row[ts_event_i])
-                    if self.start_time and t < self.start_time:
+                    if self.params.start_time and t < self.params.start_time:
                         continue
-                    if self.end_time and t > self.end_time:
+                    if self.params.end_time and t > self.params.end_time:
+                        continue
+
+                    # Track cumulative volume per symbol
+                    self.symbol_volumes[row[symbol_i]] += int(row[size_i])
+
+                    # Switch to the new leader when we have enough confidence it's the new active contract
+                    leader = max(self.symbol_volumes, key=self.symbol_volumes.get)
+                    if leader != self.current_symbol:
+                        total = sum(self.symbol_volumes.values())
+                        lead = self.symbol_volumes[leader] - self.symbol_volumes[self.current_symbol]
+
+                        if total >= self.params.min_total_volume and (
+                            lead >= self.params.abs_margin
+                            or self.symbol_volumes[leader] >= self.symbol_volumes[self.current_symbol] * (1 + self.params.pct_margin)
+                        ):
+                            self.logger.info(
+                                f"Switching from {self.current_symbol} to {leader} at {t.isoformat()} with volumes: {self.symbol_volumes}"
+                            )
+                            self.current_symbol = leader
+                    
+                    if row[symbol_i] != self.current_symbol:
                         continue
 
                     yield Tick(
@@ -76,17 +100,17 @@ class CsvTicker:
                         symbol=row[symbol_i],
                     )
                 except Exception as e:
-                    # TODO: Log error
+                    self.logger.error(f"Error parsing row: {row}, error: {e}")
                     continue
 
     async def __aiter__(self) -> AsyncIterator[Tick]:
         for tick in self._rows():
-            if self.throttle:
-                await asyncio.sleep(self.throttle)
+            if self.params.throttle:
+                await asyncio.sleep(self.params.throttle)
             yield tick
 
     def __iter__(self) -> Iterator[Tick]:
         for tick in self._rows():
-            if self.throttle:
-                time.sleep(self.throttle)
+            if self.params.throttle:
+                time.sleep(self.params.throttle)
             yield tick

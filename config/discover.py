@@ -3,11 +3,11 @@ from typing import List
 import yaml
 from pydantic import BaseModel
 
-from api.models import StrategyConfig
+from api.models import QueryConfig
 
 
 class DiscoverSettings(BaseModel):
-    strategies: List[StrategyConfig]
+    queries: List[QueryConfig]
 
     @classmethod
     def build(cls, args) -> "DiscoverSettings":
@@ -25,5 +25,5 @@ class DiscoverSettings(BaseModel):
         )
 
         parser.add_argument(
-            "--strategy", type=str, help="The strategy name to run discovery for"
+            "--query", type=str, help="The query name for which to run discovery"
         )

@@ -2,9 +2,9 @@ import logging
 import re
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-from api.models import AggregationParams
+from api.models import AggregationParams, TickerParams
 from core import Tick, run_engine
 from tickers import CsvTicker
 
@@ -21,46 +21,19 @@ def _floor_min(dt: datetime, minute_interval: int = 5) -> datetime:
 
 # Helper that parses YYYYMMDD string into a date object
 def _parse_yyyymmdd(s: str) -> date:
+    """
+    Parses a YYYYMMDD string into a date object.
+    """
     return date(int(s[:4]), int(s[4:6]), int(s[6:8]))
 
 
 def _csv_aggregator_handler(
     tick: Tick, logger: logging.Logger, state: Dict[str, Any]
 ) -> None:
-    # Ignore ticks from symbols not in allowed list
-    if tick.symbol not in state["allowed_symbols"]:
-        return
-
-    # Initialize current_symbol lazily
-    if state["current_symbol"] is None:
-        state["current_symbol"] = tick.symbol
-
-    state["symbols_used"].add(tick.symbol)
-
-    # Update symbol volumes
-    state["symbol_volumes"][tick.symbol] += tick.size
-
-    vols = state["symbol_volumes"]
-    current = state["current_symbol"]
-
-    leader = max(vols, key=vols.get)
-    if leader != current:
-        total = sum(vols.values())
-        lead = vols[leader] - vols[current]
-
-        if total >= state["min_total_volume"] and (
-            lead >= state["abs_margin"]
-            or vols[leader] >= vols[current] * (1 + state["pct_margin"])
-        ):
-            logger.info(
-                f"Switching from {current} to {leader} at {tick.t.isoformat()} with volumes: {vols}"
-            )
-            state["current_symbol"] = leader
-            current = leader
-
-    if tick.symbol != current:
-        return
-
+    """
+    Aggregation handler that builds OHLCV candles in-memory as it streams ticks.
+    The bucket timestamp is the floor of the tick time to the nearest candle length.
+    """
     bkt = _floor_min(tick.t, state["candle_length"]), tick.symbol
     rec = state["buckets"].get(bkt)
     if rec is None:
@@ -82,92 +55,71 @@ def _csv_aggregator_handler(
 
 
 class CsvAggregator:
+    """
+    Aggregator that streams trade ticks from one or more CSV files via CsvTicker and builds OHLCV candles in-memory.
+    The bucket timestamp is the floor of the tick time to the nearest candle length.
+    """
     def __init__(
         self,
         logger: logging.Logger,
         params: AggregationParams,
+        ticker_params: TickerParams,
         start_date: date,
         end_date: date,
     ) -> None:
-        if params.data_source.kind != "csv":
+        if ticker_params.data_source.kind != "csv":
             raise ValueError(
-                f"Invalid data source for CsvAggregator: {params.data_source.kind}"
+                f"Invalid data source for CsvAggregator: {ticker_params.data_source.kind}"
             )
 
         self.logger = logger
-        self.data_dir = Path(params.data_source.data_dir)
-
-        self.symbols = params.data_source.symbols
-        self.start_symbol = self.symbols[0]
-        self.pct_margin = params.data_source.pct_margin
-        self.abs_margin = params.data_source.abs_margin
-        self.min_total_volume = params.data_source.min_total_volume
-        self.unit = params.unit
-        self.candle_length = params.candle_length
-
+        self.params = params
+        self.ticker_params = ticker_params
         self.start_date = start_date
         self.end_date = end_date
-
-        # TODO: Define candle type instead of using a Dict
+        
+        self.data_dir = Path(ticker_params.data_source.data_dir)
         self.candles: List[Dict[str, Any]] = []
 
-        self.symbols_used: Set[str] = set()
-        self.current_symbol: Optional[str] = None
 
     def get_candles(self) -> List[Dict[str, Any]]:
         self._poll()
 
         return self.candles
 
+
     def _poll(self) -> None:
         # OHLCV state accumulator keyed by (bucket_ts, symbol)
         buckets: Dict[tuple[datetime, str], Dict[str, float]] = {}
 
-        symbol_volumes: Dict[str, int] = {self.start_symbol: 0}
-        for sym in self.symbols:
-            symbol_volumes[sym] = 0
-
         # Collect matching files by filename date
-        files: List[Path] = []
-        for p in sorted(self.data_dir.glob("glbx-mdp3-*.trades.csv")):
-            m = FNAME_RE.search(p.name)
+        dates: List[datetime] = []
+        for path in sorted(self.data_dir.glob("glbx-mdp3-*.trades.csv")):
+            m = FNAME_RE.search(path.name)
             if not m:
                 continue
             d = _parse_yyyymmdd(m.group(1))
             if self.start_date <= d <= self.end_date:
-                files.append(p)
-
+                dates.append(d)
+        
         state: Dict[str, Any] = {
             "buckets": buckets,
-            "symbol_volumes": symbol_volumes,
-            "current_symbol": None,
-            "allowed_symbols": self.symbols,
-            "symbols_used": set(),
-            "pct_margin": self.pct_margin,
-            "abs_margin": self.abs_margin,
-            "min_total_volume": self.min_total_volume,
-            "candle_length": self.candle_length,
-            "unit": self.unit,
+            "candle_length": self.params.candle_length,
         }
 
-        for fp in files:
-            ticker = CsvTicker(fp, self.symbols)
-
+        for d in dates:
+            ticker = CsvTicker(self.logger, self.ticker_params, d.strftime("%Y%m%d"))
             run_engine(ticker, self.logger, state, _csv_aggregator_handler)
 
-            # Reset symbol volumes for next file
-            for k in symbol_volumes:
-                symbol_volumes[k] = 0
-
+            # Carry forward the leader contract to the next file
+            self.ticker_params.start_symbol = ticker.current_symbol
+        
         if not buckets:
             raise RuntimeError(
-                f"No candles produced. current_symbol={state['current_symbol']} "
-                f"symbols={self.symbols} vols={symbol_volumes} used={state['symbols_used']}"
+                f"No candles produced. current_symbol={ticker.current_symbol} "
+                f"symbols={self.ticker_params.symbols} vols={ticker.symbol_volumes}"
             )
-
-        self.symbols_used = state["symbols_used"]
-        self.current_symbol = state["current_symbol"]
-
+        
         # Flatten to list of dicts, sorted by time then symbol
         out: List[Dict[str, Any]] = []
         for (bkt_ts, sym), rec in sorted(
