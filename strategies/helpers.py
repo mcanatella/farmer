@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from api.models import StrategyConfig
 from core import Strategy
 
-from .mean_reversion_ema import MeanReversionEma
+from .ema_mean_reversion import EmaMeanReversion
 from .static_bounce import StaticBounce
 from .static_bounce_with_delta import StaticBounceWithDelta
 from .vwap_mean_reversion import VwapMeanReversion
@@ -18,7 +18,7 @@ def build_strategy(
     elif config.strategy_params.kind == "static_bounce_with_delta":
         return StaticBounceWithDelta(logger, candles, config.strategy_params)
     elif config.strategy_params.kind == "mean_reversion_ema":
-        return MeanReversionEma(logger, candles, config.strategy_params)
+        return EmaMeanReversion(logger, candles, config.strategy_params)
     elif config.strategy_params.kind == "vwap_mean_reversion":
         return VwapMeanReversion(logger, candles, config.strategy_params)
     else:

@@ -5,14 +5,8 @@ from typing import Any, Dict, List, Optional
 from aggregators import CsvAggregator
 from api.models import BacktestConfig, BacktestResponse, BacktestResult
 from core import run_engine_async
-from strategies import build_strategy
+from strategies import build_strategy, static_bounce_handler, mean_reversion_ema_handler, vwap_mean_reversion_handler
 from tickers import CsvTicker
-
-from .handlers import (
-    mean_reversion_ema_handler,
-    static_bounce_handler,
-    vwap_mean_reversion_handler,
-)
 
 
 async def run_backtest_async(
@@ -37,11 +31,12 @@ async def _run_backtest_async_without_seeding(
     config: BacktestConfig,
     logger: Optional[logging.Logger] = None,
 ) -> BacktestResponse:
-    results: List[BacktestResult] = []
     if config.strategy.ticker_params is None:
         raise ValueError(
             "Ticker parameters are required for backtesting without seeding"
         )
+
+    results: List[BacktestResult] = []
 
     if logger is None:
         logger = logging.getLogger("backtest_async_without_seeding")
@@ -49,7 +44,7 @@ async def _run_backtest_async_without_seeding(
     for bt_date in config.get_dates():
         logger.info(f"Running backtest {config.name} for date: {bt_date}")
 
-        # Currently only CsvAggregator is supported for backtesting
+        # Currently only CsvTicker is supported for backtesting
         if config.strategy.ticker_params.data_source.kind != "csv":
             raise ValueError(
                 f"Unsupported data_source for backtesting: {config.strategy.ticker_params.data_source.kind}"
@@ -58,6 +53,7 @@ async def _run_backtest_async_without_seeding(
         # Initialize / reset requested strategy.
         # The candles list is empty because no seeding is required for this backtest mode
         strategy = build_strategy(config.strategy, logger, [])
+        handler = strategy.get_handler()
 
         # Initialize / reset handler state
         state: Dict[str, Any] = {
@@ -69,12 +65,6 @@ async def _run_backtest_async_without_seeding(
         }
 
         ticker = CsvTicker(logger, config.strategy.ticker_params, bt_date)
-
-        handler = static_bounce_handler
-        if config.strategy.strategy_params.kind == "mean_reversion_ema":
-            handler = mean_reversion_ema_handler
-        elif config.strategy.strategy_params.kind == "vwap_mean_reversion":
-            handler = vwap_mean_reversion_handler
 
         await run_engine_async(ticker, logger, state, handler)
 
@@ -98,7 +88,6 @@ async def _run_backtest_async_with_seeding(
     config: BacktestConfig,
     logger: Optional[logging.Logger] = None,
 ) -> BacktestResponse:
-    results: List[BacktestResult] = []
     if config.strategy.aggregation_params is None:
         raise ValueError(
             "Aggregation parameters are required for backtesting with seeding"
@@ -106,6 +95,8 @@ async def _run_backtest_async_with_seeding(
 
     if config.strategy.ticker_params is None:
         raise ValueError("Ticker parameters are required for backtesting with seeding")
+
+    results: List[BacktestResult] = []
 
     if logger is None:
         logger = logging.getLogger("backtest_async_with_seeding")
@@ -120,7 +111,7 @@ async def _run_backtest_async_with_seeding(
         )
         end_date = d - timedelta(days=1)
 
-        # Currently only CsvAggregator is supported for backtesting
+        # Currently only CsvTicker is supported for backtesting
         if config.strategy.ticker_params.data_source.kind != "csv":
             raise ValueError(
                 f"Unsupported data_source for backtesting: {config.strategy.ticker_params.data_source.kind}"
@@ -138,6 +129,7 @@ async def _run_backtest_async_with_seeding(
 
         # Initialize / reset requested strategy
         strategy = build_strategy(config.strategy, logger, candles)
+        handler = strategy.get_handler()
 
         # Initialize / reset handler state
         state: Dict[str, Any] = {
@@ -149,12 +141,6 @@ async def _run_backtest_async_with_seeding(
         }
 
         ticker = CsvTicker(logger, config.strategy.ticker_params, bt_date)
-
-        handler = static_bounce_handler
-        if config.strategy.strategy_params.kind == "mean_reversion_ema":
-            handler = mean_reversion_ema_handler
-        elif config.strategy.strategy_params.kind == "vwap_mean_reversion":
-            handler = vwap_mean_reversion_handler
 
         await run_engine_async(ticker, logger, state, handler)
 

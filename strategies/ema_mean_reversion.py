@@ -1,14 +1,16 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Callable
 
 from api.models import MeanReversionEmaParams
 from calculations.atr import LiveAtr
 from calculations.ema import LiveEma
 from core import Tick
 
+from .handlers import mean_reversion_ema_handler
 
-class MeanReversionEma:
+
+class EmaMeanReversion:
     """
     Mean-reversion strategy based on the Exponential Moving Average (EMA)
     with an ATR-based volatility filter.
@@ -143,9 +145,12 @@ class MeanReversionEma:
     def reset(self) -> None:
         self._cooldown_until = None
 
+    def get_handler(self) -> Callable:
+        return mean_reversion_ema_handler
+
     def __repr__(self) -> str:
         return (
-            f"MeanReversionEma(ema={self.ema.value:.4f}, atr={self.atr.value:.4f}, "
+            f"EmaMeanReversion(ema={self.ema.value:.4f}, atr={self.atr.value:.4f}, "
             f"entry_dist={self.entry_distance_ticks}, "
             f"risk={self.risk_ticks}, max_atr={self.max_atr})"
         )

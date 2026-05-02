@@ -1,14 +1,17 @@
 from .helpers import build_strategy
-from .mean_reversion_ema import MeanReversionEma
+from .ema_mean_reversion import EmaMeanReversion
 from .static_bounce import StaticBounce
 from .static_bounce_with_delta import StaticBounceWithDelta
-from .vwap_mean_reversion import BandAttempt, VwapMeanReversion
+from .vwap_mean_reversion import VwapMeanReversion
+from .handlers import static_bounce_handler, mean_reversion_ema_handler, vwap_mean_reversion_handler
 
 __all__ = [
     "StaticBounce",
     "StaticBounceWithDelta",
-    "MeanReversionEma",
+    "EmaMeanReversion",
     "VwapMeanReversion",
-    "BandAttempt",
     "build_strategy",
+    "static_bounce_handler",
+    "mean_reversion_ema_handler",
+    "vwap_mean_reversion_handler",
 ]

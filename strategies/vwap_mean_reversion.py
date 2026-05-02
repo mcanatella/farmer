@@ -1,11 +1,13 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Callable
 
 from api.models import VwapMeanReversionParams
 from calculations.vwap import LiveVwap
 from core import Tick
+
+from .handlers import vwap_mean_reversion_handler
 
 
 @dataclass
@@ -266,6 +268,9 @@ class VwapMeanReversion:
         self.attempt = None
         self._cooldown_until = None
         self._paused_direction = None
+
+    def get_handler(self) -> Callable:
+        return vwap_mean_reversion_handler
 
     def __repr__(self) -> str:
         return (
