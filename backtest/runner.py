@@ -31,9 +31,15 @@ async def _run_backtest_async_without_seeding(
     config: BacktestConfig,
     logger: Optional[logging.Logger] = None,
 ) -> BacktestResponse:
+    # Validations
     if config.strategy.ticker_params is None:
         raise ValueError(
             "Ticker parameters are required for backtesting without seeding"
+        )
+    
+    if config.strategy.ticker_params.data_source.kind != "csv":
+        raise ValueError(
+            f"Unsupported data_source for backtesting: {config.strategy.ticker_params.data_source.kind}"
         )
 
     results: List[BacktestResult] = []
@@ -43,12 +49,6 @@ async def _run_backtest_async_without_seeding(
 
     for bt_date in config.get_dates():
         logger.info(f"Running backtest {config.name} for date: {bt_date}")
-
-        # Currently only CsvTicker is supported for backtesting
-        if config.strategy.ticker_params.data_source.kind != "csv":
-            raise ValueError(
-                f"Unsupported data_source for backtesting: {config.strategy.ticker_params.data_source.kind}"
-            )
 
         # Initialize / reset requested strategy.
         # The candles list is empty because no seeding is required for this backtest mode
@@ -88,6 +88,7 @@ async def _run_backtest_async_with_seeding(
     config: BacktestConfig,
     logger: Optional[logging.Logger] = None,
 ) -> BacktestResponse:
+    # Validations
     if config.strategy.aggregation_params is None:
         raise ValueError(
             "Aggregation parameters are required for backtesting with seeding"
@@ -95,6 +96,11 @@ async def _run_backtest_async_with_seeding(
 
     if config.strategy.ticker_params is None:
         raise ValueError("Ticker parameters are required for backtesting with seeding")
+    
+    if config.strategy.ticker_params.data_source.kind != "csv":
+        raise ValueError(
+            f"Unsupported data_source for backtesting: {config.strategy.ticker_params.data_source.kind}"
+        )
 
     results: List[BacktestResult] = []
 
@@ -110,12 +116,6 @@ async def _run_backtest_async_with_seeding(
             days=config.strategy.aggregation_params.lookback_days
         )
         end_date = d - timedelta(days=1)
-
-        # Currently only CsvTicker is supported for backtesting
-        if config.strategy.ticker_params.data_source.kind != "csv":
-            raise ValueError(
-                f"Unsupported data_source for backtesting: {config.strategy.ticker_params.data_source.kind}"
-            )
 
         # Build a list of historical candles over the specified time window via CsvAggregator
         aggregator = CsvAggregator(

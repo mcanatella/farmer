@@ -37,9 +37,9 @@ class LiveVwap:
         self.reset_minute = session_reset_minute
         self.tz = ZoneInfo(tz_name)
 
-        self._sum_v: int = 0
-        self._sum_pv: float = 0.0
-        self._sum_ppv: float = 0.0
+        self._sum_v: int = 0 # cumulative volume for current session
+        self._sum_pv: float = 0.0 # cumulative price*volume for current session
+        self._sum_ppv: float = 0.0 # cumulative price^2*volume for current session
 
         self._current_session_key: Optional[datetime] = None
 
