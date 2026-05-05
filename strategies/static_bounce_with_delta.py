@@ -1,13 +1,15 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 
 from tabulate import tabulate
 
 from api.models import StrategyParams
 from calculations import DeltaEvent, DeltaWindow, calculate_static_levels
 from core import Tick
+
+from .handlers import static_bounce_handler
 
 
 @dataclass
@@ -310,6 +312,9 @@ class StaticBounceWithDelta:
         self.last_level_traded = None
         self.attempt = None
         self.cooldowns.clear()
+
+    def get_handler(self) -> Callable:
+        return static_bounce_handler
 
     def __repr__(self) -> str:
         headers = ["Level", "Hits", "Score"]

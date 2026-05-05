@@ -5,7 +5,7 @@ from .models import (
     BacktestResult,
     CsvDataSource,
     DataSource,
-    MeanReversionEmaParams,
+    EmaMeanReversionParams,
     ProjectXDataSource,
     QueryConfig,
     StaticBounceParams,
@@ -14,13 +14,15 @@ from .models import (
     StrategyParams,
     TickerParams,
     VwapMeanReversionParams,
+    VwapMeanReversionWithScalingParams,
 )
 
 __all__ = [
     "StaticBounceParams",
     "StaticBounceWithDeltaParams",
-    "MeanReversionEmaParams",
+    "EmaMeanReversionParams",
     "VwapMeanReversionParams",
+    "VwapMeanReversionWithScalingParams",
     "StrategyParams",
     "CsvDataSource",
     "ProjectXDataSource",

@@ -1,11 +1,13 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 
 from tabulate import tabulate
 
 from api.models import StrategyParams
 from calculations import calculate_static_levels
 from core import Tick
+
+from .handlers import static_bounce_handler
 
 
 class StaticBounce:
@@ -139,6 +141,9 @@ class StaticBounce:
 
     def reset(self) -> None:
         self.last_level_traded = None
+
+    def get_handler(self) -> Callable:
+        return static_bounce_handler
 
     def __repr__(self) -> str:
         headers = ["Level", "Hits", "Score"]
