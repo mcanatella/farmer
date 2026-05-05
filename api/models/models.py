@@ -81,11 +81,13 @@ class VwapMeanReversionParams(BaseModel):
 class VwapMeanReversionWithScalingParams(BaseModel):
     tick_size: float
     tick_value: float
-    kind: Literal["vwap_mean_reversion_with_scaling"] = "vwap_mean_reversion_with_scaling"
+    kind: Literal["vwap_mean_reversion_with_scaling"] = (
+        "vwap_mean_reversion_with_scaling"
+    )
     precision: int = 2
     session_reset_hour: int = 17
     session_reset_minute: int = 0
- 
+
     # Initial Entry
     entry_std_dev: float = 2.0
     max_std_dev: float = 4.0
@@ -93,10 +95,10 @@ class VwapMeanReversionWithScalingParams(BaseModel):
     risk_ticks: int = 80
     min_session_volume: int = 1000
     cooldown_seconds: int = 300
- 
+
     # Trailing stop (activated on scale-in)
     trail_ticks: int = 20
- 
+
     # Scale-in confirmation (delta)
     attempt_seconds: int = 30
     delta_ratio_threshold: float = 0.15

@@ -38,7 +38,7 @@ async def _run_backtest_async_without_seeding(
         raise ValueError(
             "Ticker parameters are required for backtesting without seeding"
         )
-    
+
     if config.strategy.ticker_params.data_source.kind != "csv":
         raise ValueError(
             f"Unsupported data_source for backtesting: {config.strategy.ticker_params.data_source.kind}"
@@ -98,7 +98,7 @@ async def _run_backtest_async_with_seeding(
 
     if config.strategy.ticker_params is None:
         raise ValueError("Ticker parameters are required for backtesting with seeding")
-    
+
     if config.strategy.ticker_params.data_source.kind != "csv":
         raise ValueError(
             f"Unsupported data_source for backtesting: {config.strategy.ticker_params.data_source.kind}"

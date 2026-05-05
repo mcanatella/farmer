@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Callable
+from typing import Any, Callable, Dict, List
 
 from tabulate import tabulate
 
@@ -141,7 +141,7 @@ class StaticBounce:
 
     def reset(self) -> None:
         self.last_level_traded = None
-    
+
     def get_handler(self) -> Callable:
         return static_bounce_handler
 

@@ -202,27 +202,28 @@ def vwap_mean_reversion_with_scaling_handler(
     tick: Tick, logger: logging.Logger, state: Dict[str, Any]
 ) -> None:
     strategy = state["strategy"]
- 
+
     # Handler owns the VWAP update
     strategy.vwap.on_tick(tick)
     vwap_now = strategy.vwap.vwap
- 
+
     tick_size = state["tick_size"]
     tick_value = state["tick_value"]
- 
+
     # VWAP crossing detection — clear directional pause
     prev_price = state.get("prev_price")
     if prev_price is not None and vwap_now > 0:
         if (prev_price - vwap_now) * (tick.price - vwap_now) <= 0:
             strategy.on_vwap_touch()
     state["prev_price"] = tick.price
- 
+
     position = state["position"]
- 
+
     # --- No position: check for initial entry ---
     if position is None:
         signal = strategy.check(
-            tick, tick.t,
+            tick,
+            tick.t,
             vwap=vwap_now,
             std_dev=strategy.vwap.std_dev,
             session_volume=strategy.vwap.session_volume,
@@ -241,37 +242,37 @@ def vwap_mean_reversion_with_scaling_handler(
                 "num_contracts": 1,
             }
         return
- 
+
     direction = position["direction"]
- 
+
     # --- Scale-in logic (only while not yet scaled) ---
     if not position["scaled"]:
         if not position["confirmed"]:
             confirmed = strategy.check_scale(tick)
             if confirmed:
                 position["confirmed"] = True
- 
+
                 if direction == "LONG":
                     is_green = tick.price > position["entry1"]
                 else:
                     is_green = tick.price < position["entry1"]
- 
+
                 if is_green:
                     _do_scale_in(position, tick, strategy, logger)
                     return
                 else:
                     position["waiting_for_green"] = True
- 
+
         elif position["waiting_for_green"]:
             if direction == "LONG":
                 is_green = tick.price > position["entry1"]
             else:
                 is_green = tick.price < position["entry1"]
- 
+
             if is_green:
                 _do_scale_in(position, tick, strategy, logger)
                 return
- 
+
     # --- Update trailing stop if active ---
     if position["trailing_stop"] is not None:
         trail_dist = strategy.trail_ticks * tick_size
@@ -283,16 +284,19 @@ def vwap_mean_reversion_with_scaling_handler(
             new_stop = tick.price + trail_dist
             if new_stop < position["trailing_stop"]:
                 position["trailing_stop"] = new_stop
- 
+
     # --- Exit checks (priority: hard stop > trailing stop > VWAP TP) ---
     exit_price = None
     exit_reason = None
- 
+
     if direction == "LONG":
         if tick.price <= position["stop_loss"]:
             exit_price = position["stop_loss"]
             exit_reason = "hard_stop"
-        elif position["trailing_stop"] is not None and tick.price <= position["trailing_stop"]:
+        elif (
+            position["trailing_stop"] is not None
+            and tick.price <= position["trailing_stop"]
+        ):
             exit_price = position["trailing_stop"]
             exit_reason = "trailing_stop"
         elif tick.price >= vwap_now:
@@ -302,26 +306,29 @@ def vwap_mean_reversion_with_scaling_handler(
         if tick.price >= position["stop_loss"]:
             exit_price = position["stop_loss"]
             exit_reason = "hard_stop"
-        elif position["trailing_stop"] is not None and tick.price >= position["trailing_stop"]:
+        elif (
+            position["trailing_stop"] is not None
+            and tick.price >= position["trailing_stop"]
+        ):
             exit_price = position["trailing_stop"]
             exit_reason = "trailing_stop"
         elif tick.price <= vwap_now:
             exit_price = tick.price
             exit_reason = "vwap_tp"
- 
+
     if exit_price is None:
         return
- 
+
     # --- PnL calculation ---
     total_pnl = 0.0
- 
+
     # Contract 1
     if direction == "LONG":
         pnl1 = (exit_price - position["entry1"]) / tick_size * tick_value
     else:
         pnl1 = (position["entry1"] - exit_price) / tick_size * tick_value
     total_pnl += pnl1
- 
+
     # Contract 2 (if scaled in)
     if position["scaled"] and position["entry2"] is not None:
         if direction == "LONG":
@@ -329,20 +336,20 @@ def vwap_mean_reversion_with_scaling_handler(
         else:
             pnl2 = (position["entry2"] - exit_price) / tick_size * tick_value
         total_pnl += pnl2
- 
+
     total_pnl = round(total_pnl, 2)
     state["total_pnl"] += total_pnl
- 
+
     if exit_reason == "hard_stop":
         strategy.on_stop_loss(direction)
- 
+
     ts_start = (
         position["timestamp"]
         .replace(microsecond=0)
         .astimezone(ZoneInfo("America/Chicago"))
     )
     ts_end = tick.t.replace(microsecond=0).astimezone(ZoneInfo("America/Chicago"))
- 
+
     contracts = position["num_contracts"]
     log_with_color(
         logger,
@@ -352,10 +359,10 @@ def vwap_mean_reversion_with_scaling_handler(
         Fore.GREEN if total_pnl > 0 else Fore.RED,
         "info",
     )
- 
+
     state["position"] = None
- 
- 
+
+
 def _do_scale_in(
     position: Dict[str, Any],
     tick: Tick,

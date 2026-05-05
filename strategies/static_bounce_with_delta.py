@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Callable
+from typing import Any, Callable, Dict, List
 
 from tabulate import tabulate
 
@@ -312,7 +312,7 @@ class StaticBounceWithDelta:
         self.last_level_traded = None
         self.attempt = None
         self.cooldowns.clear()
-    
+
     def get_handler(self) -> Callable:
         return static_bounce_handler
 

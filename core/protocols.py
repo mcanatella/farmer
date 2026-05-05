@@ -1,4 +1,4 @@
-from typing import Any, AsyncIterator, Dict, Iterator, Protocol, Callable
+from typing import Any, AsyncIterator, Callable, Dict, Iterator, Protocol
 
 from .types import Tick
 
