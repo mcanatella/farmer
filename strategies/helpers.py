@@ -8,6 +8,7 @@ from .ema_mean_reversion import EmaMeanReversion
 from .static_bounce import StaticBounce
 from .static_bounce_with_delta import StaticBounceWithDelta
 from .vwap_mean_reversion import VwapMeanReversion
+from .vwap_mean_reversion_with_scaling import VwapMeanReversionWithScaling
 
 
 def build_strategy(
@@ -21,5 +22,7 @@ def build_strategy(
         return EmaMeanReversion(logger, candles, config.strategy_params)
     elif config.strategy_params.kind == "vwap_mean_reversion":
         return VwapMeanReversion(logger, candles, config.strategy_params)
+    elif config.strategy_params.kind == "vwap_mean_reversion_with_scaling":
+        return VwapMeanReversionWithScaling(logger, candles, config.strategy_params)
     else:
         raise ValueError(f"Unsupported strategy kind: {config.strategy_params.kind}")

@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from aggregators import CsvAggregator
 from api.models import BacktestConfig, BacktestResponse, BacktestResult
 from core import run_engine_async
-from strategies import build_strategy, static_bounce_handler, mean_reversion_ema_handler, vwap_mean_reversion_handler
+from strategies import build_strategy
 from tickers import CsvTicker
 
 
@@ -20,6 +20,8 @@ async def run_backtest_async(
     elif config.strategy.strategy_params.kind == "mean_reversion_ema":
         return await _run_backtest_async_with_seeding(config, logger)
     elif config.strategy.strategy_params.kind == "vwap_mean_reversion":
+        return await _run_backtest_async_without_seeding(config, logger)
+    elif config.strategy.strategy_params.kind == "vwap_mean_reversion_with_scaling":
         return await _run_backtest_async_without_seeding(config, logger)
     else:
         raise ValueError(
