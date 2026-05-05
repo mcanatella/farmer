@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Callable
 
-from api.models import MeanReversionEmaParams
+from api.models import EmaMeanReversionParams
 from calculations.atr import LiveAtr
 from calculations.ema import LiveEma
 from core import Tick
@@ -45,7 +45,7 @@ class EmaMeanReversion:
         self,
         logger: logging.Logger,
         candles: List[Dict[str, Any]],
-        params: MeanReversionEmaParams,
+        params: EmaMeanReversionParams,
     ) -> None:
         self.logger = logger
 

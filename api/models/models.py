@@ -38,7 +38,7 @@ class StaticBounceWithDeltaParams(BaseModel):
     cooldown_seconds: int = 120
 
 
-class MeanReversionEmaParams(BaseModel):
+class EmaMeanReversionParams(BaseModel):
     tick_size: float
     tick_value: float
     entry_distance_ticks: int  # min ticks from EMA to trigger entry
@@ -83,12 +83,10 @@ class VwapMeanReversionWithScalingParams(BaseModel):
     tick_value: float
     kind: Literal["vwap_mean_reversion_with_scaling"] = "vwap_mean_reversion_with_scaling"
     precision: int = 2
- 
-    # Session
     session_reset_hour: int = 17
     session_reset_minute: int = 0
  
-    # Entry
+    # Initial Entry
     entry_std_dev: float = 2.0
     max_std_dev: float = 4.0
     min_std_dev: Optional[float] = None
@@ -97,7 +95,7 @@ class VwapMeanReversionWithScalingParams(BaseModel):
     cooldown_seconds: int = 300
  
     # Trailing stop (activated on scale-in)
-    trail_ticks: int = 20 # ticks behind high water mark
+    trail_ticks: int = 20
  
     # Scale-in confirmation (delta)
     attempt_seconds: int = 30
@@ -111,7 +109,7 @@ class VwapMeanReversionWithScalingParams(BaseModel):
 StrategyParams = Union[
     StaticBounceParams,
     StaticBounceWithDeltaParams,
-    MeanReversionEmaParams,
+    EmaMeanReversionParams,
     VwapMeanReversionParams,
     VwapMeanReversionWithScalingParams,
 ]
